@@ -2,47 +2,73 @@
 import Card from "@/components/Card";
 import DashboardHeader from "@/components/DashboardHeader";
 import { Users, Activity, UserMinus, DollarSign, Table } from "lucide-react"
-import { mockSessions, mockCustomers, mockEmployees, mockServices } from "@/data/sessions"
 import TopServiceChart from "@/components/TopServiceChart";
 import RevenueOverview from "@/components/RevenueOverview";
 import TopEmployeesChart from "@/components/TopEmployeeChart";
 import ActiveCustomersChart from "@/components/TopCustomerChart";
 import UpcomingSessionsCard from "@/components/UpcomingSession";
-
-
+import { useEffect, useState } from "react";
+import { Dashboard } from "@/types/types";
+import Skeleton from "@/components/Skeleton";
+import { apiGet } from "@/lib/api";
 
 export default function Home(){
-    const today = new Date().toISOString().split("T")[0]
-    const todaysRevenue = mockSessions
-    .filter(s => s.status === "done" && s.date === today)
-    .reduce((sum, s) => sum + s.totalPrice, 0)
-    const todaysSessions = mockSessions.filter(s => s.date === today).length
+    const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const newCustomersToday = mockCustomers.filter(c => c.joinDate === today).length
-
-    const activeCustomers = mockCustomers.filter(c => c.status === "active").length
-
-
-    const revenueByService: Record<string, number> = {}
-      mockSessions.forEach(s => {
-        if (s.status === "done") {
-          revenueByService[s.serviceId] = (revenueByService[s.serviceId] ?? 0) + s.totalPrice
+    useEffect(() => {
+      async function fetchDashboard() {
+        try {
+          setLoading(true);
+          const data = await apiGet("/dashboard");
+          setDashboard(data);
+        } catch (error) {
+          console.error("Failed to load dashboard:", error);
+        } finally {
+          setLoading(false);
         }
-    })
+      }
+      fetchDashboard();
+    }, []);
 
-    const totalRevenue = Object.values(revenueByService).reduce((a, b) => a + b, 0)
-
-    const topServices = mockServices
-      .map(service => ({
-        ...service,
-        percent: totalRevenue
-          ? Math.round(((revenueByService[service.id] ?? 0) / totalRevenue) * 100)
-          : 0,
-      }))
-      .sort((a, b) => b.percent - a.percent)
-      .slice(0, 5)
+    if (loading) {
+      return (
+        <div className="p-10 space-y-8">
+          <DashboardHeader title="Dashboard" buttonText="Generate Report" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[120px] w-full" />
+            ))}
+          </div>
+          <div className="flex flex-row gap-4 mt-6">
+            <Skeleton className="h-[300px] w-1/2" />
+            <Skeleton className="h-[300px] w-1/2" />
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-[280px] w-full" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (!dashboard) return <p className="p-10">No dashboard data available.</p>;
+  
+    const {
+      todaysRevenue,
+      todaysSessions,
+      newCustomersToday,
+      activeCustomers,
+      topServices,
+      monthlyRevenue,
+      topEmployees,
+      activeCustomersList,
+      upcomingSessions
+    } = dashboard;
+    
     return (
-      <div className="p-10 space-y-8 h-screen">
+      <div className="p-10 space-y-8 max-h-screen">
         {/* Header */}
         <DashboardHeader
           title="Dashboard"
@@ -84,13 +110,13 @@ export default function Home(){
             />
         </div>
         <div className="flex flex-row gap-4">
-          <RevenueOverview/>
+          <RevenueOverview monthlyRevenue={monthlyRevenue}/>
           <TopServiceChart topServices={topServices}/>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-          <TopEmployeesChart />
-          <ActiveCustomersChart/>
-          <UpcomingSessionsCard/>
+          <TopEmployeesChart topEmployees={topEmployees}/>
+          <ActiveCustomersChart customerActivity={activeCustomersList}/>
+          <UpcomingSessionsCard upcoming={upcomingSessions}/>
         </div>
       </div>
     )

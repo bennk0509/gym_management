@@ -14,6 +14,7 @@ import {
   MdMenuOpen,
   MdClose,
 } from "react-icons/md"
+import { LuPackage } from "react-icons/lu";
 import { HiOutlineMenuAlt2, HiExternalLink } from "react-icons/hi"
 import CustomerSelect from "./CustomerSelect"
 
@@ -36,6 +37,7 @@ export default function AddSessionModal({
   const [serviceID, setServiceID] = useState("")
   const [employee, setEmployee] = useState("")
   const [title, setTitle] = useState("")
+  const [customerPackage, setCustomerPackage] = useState("");
   const [customer, setCustomer] = useState<Customer | null>(null)
 
   const selectedService: Service | undefined = mockServices.find(
@@ -113,13 +115,16 @@ export default function AddSessionModal({
       <form className="bg-white rounded-2xl shadow-xl w-[540px] flex flex-col p-3 px-5 py-5 gap-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-brand-primary font-heading text-lg font-semibold">
-            {isEdit ? "Edit Session" : "New Session"}
-          </h3>
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder={ isEdit ? `Edit Session Title` : `Add Session Title` }
+              onChange={(e) => setTitle(e.target.value)}
+              value={title}
+              className="p-2 w-full border-b border-neutral-200 pb-0 text-brand-primary font-heading"
+            />
+          </div>
           <div className="flex flex-row items-center gap-4">
-            <button type="button">
-              <HiExternalLink className="w-5 h-5 text-gray-500" />
-            </button>
             <button type="button" onClick={onClose}>
               <MdClose className="w-5 h-5 text-gray-500" />
             </button>
@@ -127,7 +132,7 @@ export default function AddSessionModal({
         </div>
 
         {/* Title */}
-        <div>
+        {/* <div>
           <input
             type="text"
             placeholder="Add Session Title"
@@ -135,7 +140,7 @@ export default function AddSessionModal({
             value={title}
             className="p-2 w-full border-b border-neutral-200 pb-0 text-brand-primary font-heading"
           />
-        </div>
+        </div> */}
 
         {/* Form Fields */}
         <div className="flex flex-col gap-5 py-3">
@@ -172,11 +177,12 @@ export default function AddSessionModal({
           <div className="flex flex-row items-center gap-10">
             <MdPeopleAlt className="w-7 h-7 text-gray-500" />
             <select
-            className="p-2 w-full border-b border-neutral-200 text-brand-primary text-sm appearance-none"
+            className={`p-2 w-full border-b border-neutral-200 text-sm appearance-none
+                        ${employee === '' ? 'text-neutral-400'  : 'text-brand-primary' }`}
             value={employee}
             onChange={(e) => setEmployee(e.target.value)}
             >
-            <option value="">Select Employee (optional)</option>
+            <option value="" disabled className="text-neutral-400">Select Employee</option>
             {mockEmployees.map((s) => (
                 <option key={s.id} value={s.id}>
                 {s.firstName} {s.lastName} ({s.role})
@@ -191,23 +197,42 @@ export default function AddSessionModal({
             <CustomerSelect value={customer} onChange={setCustomer} />
           </div>
 
+          {/* Package */}
+          <div className="flex flex-row items-center gap-10">
+            <LuPackage className="w-7 h-7 text-gray-500"/>
+            <select
+              className={`p-2 w-full border-b border-neutral-200 text-sm appearance-none
+                          ${customerPackage === '' ? 'text-neutral-400'  : 'text-brand-primary' }`}
+              value={customerPackage}
+              onChange={(e) => setCustomerPackage(e.target.value)}
+              >
+              <option value="" disabled className="text-neutral-400">Select Package</option>
+              {mockEmployees.map((s) => (
+                  <option key={s.id} value={s.id}>
+                  {s.firstName} {s.lastName} ({s.role})
+                  </option>
+              ))}
+            </select>
+          </div>
+
           {/* Service */}
           <div className="flex flex-row items-start justify-center gap-10">
             <MdMenuOpen className="w-7 h-7 text-gray-500" />
             <div className="w-full items-start">
               <select
-                className="p-2 w-full border-b border-neutral-200 text-brand-primary text-sm appearance-none"
+                className={`p-2 w-full border-b border-neutral-200 text-sm appearance-none
+                  ${serviceID === '' ? 'text-neutral-400' : 'text-brand-primary'}
+                `}
                 value={serviceID}
                 onChange={(e) => setServiceID(e.target.value)}
               >
-                <option value="">Select Service</option>
+                <option value="" disabled className="text-neutral-400">Select Service</option>
                 {mockServices.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
-
               {selectedService && (
                 <div className="mt-3 w-full rounded-xl p-4">
                   <div className="flex flex-row items-center justify-between">
@@ -231,6 +256,8 @@ export default function AddSessionModal({
               )}
             </div>
           </div>
+
+
 
           {/* Description */}
           <div className="flex flex-row items-center gap-10">

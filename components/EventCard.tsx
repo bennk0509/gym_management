@@ -2,6 +2,7 @@ import { format, isSameDay } from "date-fns"
 import React, { useState } from "react"
 import { Session, SessionStatus, SessionType } from "@/data/sessions"
 import { view } from "framer-motion/client"
+import SessionDetail from "./SessionDetail"
 
 interface SessionBoxProps {
   event: Session
@@ -15,7 +16,8 @@ interface SessionBoxProps {
   onEdit?: (e: Session) => void
   onDelete?: (e: Session) => void
   SessionHoverCard?: React.ComponentType<any>
-  view: "daily" | "weekly" | "monthly"
+  view: "daily" | "weekly" | "monthly",
+  onMarkComplete?: (e: Session) => void
 }
 
 
@@ -32,7 +34,8 @@ export const SessionBox: React.FC<SessionBoxProps> = ({
   onEdit,
   onDelete,
   SessionHoverCard,
-  view
+  view,
+  onMarkComplete
 }) => {
   // Compute overlapping columns
     const isGridView = view === "daily" || view === "weekly"
@@ -128,7 +131,15 @@ export const SessionBox: React.FC<SessionBoxProps> = ({
             onEdit={onEdit}
             onDelete={onDelete}
             onClose={() => {setHoveredId(null)}}
+            onMarkComplete={onMarkComplete}
           />
+          // SessionDetail && (
+          // <SessionDetail
+          //   session={event}
+          //   onClose={() => {setHoveredId(null)}}
+          //   onEdit={onEdit}
+          //   onDelete={onDelete}
+          // />
         )}
     </div>
   )

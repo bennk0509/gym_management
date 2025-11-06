@@ -15,7 +15,7 @@ import SessionHoverCard from "./SessionHoverCard"
 import { useState } from "react"
 
 
-export default function MonthlyCalendarView({ date, events = [],onEdit, onDelete}: CalendarProps) {
+export default function MonthlyCalendarView({ date, events = [],onEdit, onDelete, onMarkComplete}: CalendarProps) {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -86,6 +86,7 @@ export default function MonthlyCalendarView({ date, events = [],onEdit, onDelete
                     SessionHoverCard={SessionHoverCard}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onMarkComplete={onMarkComplete}
                     view="monthly"
                   />
                 ))}

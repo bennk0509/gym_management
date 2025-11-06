@@ -9,54 +9,74 @@ import {
   DollarSign,
   Activity,
   Star,
-  Users,
   Award,
 } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import Card from "@/components/Card";
 import DataTable from "@/components/DataTable";
-import {
-  mockEmployees,
-  mockSessions,
-  mockPayrolls,
-  mockCustomers,
-} from "@/data/sessions";
-import { Session, Payroll } from "@/data/sessions";
+import {EmployeeDetail } from "@/types/types";
+import { useEffect, useState } from "react";
+import { apiGet } from "@/lib/api";
+import { em } from "framer-motion/client";
 
 export default function EmployeeDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const employee = mockEmployees.find((e) => e.id === id);
-  const sessions = mockSessions.filter((s) => s.employee === employee?.firstName + " " + employee?.lastName);
-  const payrolls = mockPayrolls.filter((p) => p.employeeId === id);
 
-  if (!employee) {
+  const [employee, setEmployee] = useState<EmployeeDetail | null> (null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    async function fetchCustomer() {
+      try {
+        setLoading(true);
+        const data = await apiGet(`/employees/${id}`);
+        console.log(data);
+        setEmployee(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load customer data.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (id) fetchCustomer();
+  }, [id]);
+
+  if (loading) {
     return (
-      <div className="p-10 text-center text-gray-500">Employee not found.</div>
+      <div className="p-10 text-center text-gray-500">Loading customer...</div>
+    );
+  }
+  if (error || !employee) {
+    return (
+      <div className="p-10 text-center text-gray-500">
+        {error || "Employee not found."}
+      </div>
     );
   }
 
   // ---- PERFORMANCE METRICS ----
-  const totalSessions = sessions.length;
-  const completedSessions = sessions.filter((s) => s.status === "done").length;
-  const canceledSessions = sessions.filter((s) => s.status === "cancel").length;
-  const totalRevenue = sessions.reduce((sum, s) => sum + s.totalPrice, 0);
-  const avgRevenuePerSession =
-    totalSessions > 0 ? Math.round(totalRevenue / totalSessions) : 0;
+  const sessions = employee.sessionHistory
+  const payrolls = employee.payrollHistory
 
-  const activeCustomers = new Set(
-    sessions.filter((s) => s.status === "done").map((s) => s.customer)
-  ).size;
-
+  const {totalSessions, completedSessions, cancelledSessions ,totalRevenue} = employee.stats;
   const avgRating = 4.6; // mock rating until feedback data added
 
   return (
     <div className="p-10 space-y-8 h-screen">
       {/* Header */}
       <DashboardHeader
-        title={`${employee.firstName} ${employee.lastName}`}
+        title={employee.fullName}
         buttonText="← Back to Employees"
-        onButtonClick={() => router.push("/employees")}
+        onButtonClick={() => {
+          // const params = new URLSearchParams(window.location.search);
+          // console.log(params.get("page"))
+          // const page = params.get("page") || 1;
+          // console.log(page);
+          // router.push(`/customers?page=${page}`);
+          router.back();
+        }}
       />
 
       {/* Profile Section */}
@@ -68,7 +88,7 @@ export default function EmployeeDetailPage() {
             </div>
             <div>
               <h2 className="text-2xl font-semibold text-brand-primary">
-                {employee.firstName} {employee.lastName}
+                {employee.fullName}
               </h2>
               <p className="text-gray-500 capitalize">{employee.role}</p>
             </div>
@@ -90,17 +110,11 @@ export default function EmployeeDetailPage() {
       </div>
 
       {/* PERFORMANCE STATS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card
           title="Total Sessions"
           number={totalSessions}
           icon={<Activity className="text-blue-600" />}
-          date={new Date().toString()}
-        />
-        <Card
-          title="Active Customers"
-          number={activeCustomers}
-          icon={<Users className="text-green-600" />}
           date={new Date().toString()}
         />
         <Card
@@ -116,10 +130,6 @@ export default function EmployeeDetailPage() {
           icon={<Star className="text-yellow-500" />}
           date={new Date().toString()}
         />
-      </div>
-
-      {/* ADDITIONAL METRICS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card
           title="Completed Sessions"
           number={completedSessions}
@@ -128,15 +138,8 @@ export default function EmployeeDetailPage() {
         />
         <Card
           title="Canceled Sessions"
-          number={canceledSessions}
+          number={cancelledSessions}
           icon={<Activity className="text-red-500" />}
-          date={new Date().toString()}
-        />
-        <Card
-          title="Avg. Revenue per Session"
-          prefix="$"
-          number={avgRevenuePerSession}
-          icon={<DollarSign className="text-brand-700" />}
           date={new Date().toString()}
         />
       </div>
@@ -148,15 +151,34 @@ export default function EmployeeDetailPage() {
         </h3>
         <DataTable
           data={sessions}
+          loading={loading}
           columns={[
             { key: "title", header: "Session Title" },
-            { key: "type", header: "Type" },
+            { key: "type", 
+              header: "Type",
+              render: (s) => (
+              <span
+                className={`text-xs px-2 py-1 rounded-full capitalize ${
+                  s.type === "gym"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}
+              >
+                {s.type}
+              </span>
+            ), },
             {
               key: "date",
               header: "Date",
               render: (s) => new Date(s.date).toLocaleDateString(),
             },
-            { key: "customer", header: "Customer ID" },
+            { key: "customer", 
+              header: "Customer ID",
+              render: (s) => (
+              <span>
+                {s.customer.firstName} {s.customer.lastName}
+              </span>
+            ), },
             {
               key: "status",
               header: "Status",
@@ -190,6 +212,7 @@ export default function EmployeeDetailPage() {
         </h3>
         <DataTable
           data={payrolls}
+          loading={loading}
           columns={[
             { key: "period", header: "Period (YYYY-MM)" },
             {

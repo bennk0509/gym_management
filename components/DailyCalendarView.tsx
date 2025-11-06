@@ -11,7 +11,6 @@ export default function DailyCalendarView({ date, events = [],onEdit,onDelete }:
     const [now, setNow] = useState(new Date());
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [hoverPos, setHoverPos] = useState<"left" | "right" | "center"> ("right");
     const rowHeight = 64
     const gap = 4
     useEffect(() => {

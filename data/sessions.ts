@@ -3,6 +3,7 @@ export interface CalendarProps {
   events: Session[]
   onEdit?: (s: Session) => void
   onDelete?: (s: Session) => void
+  onMarkComplete?: (s:Session) => void
 }
 
 
@@ -189,6 +190,7 @@ export interface DataTableProps<T> {
   onRowClick?: (row: T) => void
   emptyMessage?: string
   maxHeight?: string
+  loading: boolean,
 }
 export type Customer = {
   id: string

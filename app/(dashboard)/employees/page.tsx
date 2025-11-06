@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Users, Activity, DollarSign, UserMinus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -13,42 +13,68 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DataTable from "@/components/DataTable";
 import Pagination from "@/components/Pagination";
 import AddNewEmployee from "@/components/AddNewEmployee";
-import { Employee, mockEmployees } from "@/data/sessions";
 import EmployeeSearchBar from "@/components/CustomerSearchBar"; 
 import EmployeeFiltersPanel from "@/components/EmployeeFiltersPanel";
+import { useDebounce } from "use-debounce";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
+import { stat } from "fs";
+import { Employee } from "@/types/types";
+import { toast } from "sonner";
 
 export default function Employees() {
   const router = useRouter();
-  // 🔹 State
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
+
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
   const [query, setQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
   const [hireStart, setHireStart] = useState("");
-  const [hireEnd, setHireEnd] = useState("");
+  const [hireEnd, setHireEnd] = useState(""); 
   const [role, setRole] = useState("");
   const [sortField, setSortField] = useState<"name" | "status" | "rate" | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
-  const currentDate = new Date();
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalEmployees: 0,
+    activeEmployees: 0,
+    inactiveEmployees: 0,
+    avgSalary: 0,
+  })
+  async function loadEmployees() {
+    try {
+      setLoading(true);
+      const queryObj: Record<string, string> = {};
 
-  // 🔹 Stats
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter((e) => e.status === "active").length;
-  const inactiveEmployees = employees.filter(
-    (e) => e.status === "inactive"
-  ).length;
+      if (status && status !== "all") queryObj.status = status;
+      if (query) queryObj.search = query;
+      if (hireStart) queryObj.hireStart = hireStart;
+      if (hireEnd) queryObj.hireEnd = hireEnd;
+      if (role) queryObj.role = role;
 
-  const avgHourlyRate = useMemo(() => {
-    const avg =
-      employees.reduce((sum, e) => sum + e.salary, 0) / employees.length;
-    return Math.round(avg);
-  }, [employees]);
+      const queryParams = new URLSearchParams(queryObj).toString();
+      const data = await apiGet(`/employees${queryParams ? `?${queryParams}` : ""}`);
+      setEmployees(data);
 
-  // 🔹 Search filter
+      const statsData = await apiGet(`/employees/stats`);
+      console.log(statsData);
+      setStats(statsData);
+    } catch (err) {
+      console.error("Failed to load employees:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    loadEmployees();
+  }, [status, query, hireStart, hireEnd, role]);
+
+  const {totalEmployees, activeEmployees, inactiveEmployees, avgSalary} = stats;
+
+
   const filteredEmployees = useMemo(() => {
     return employees.filter((e) => {
       const fullName = `${e.firstName} ${e.lastName}`.toLowerCase();
@@ -119,31 +145,77 @@ export default function Employees() {
   };
 
   // 🔹 Handlers
-  const handleSaveEmployee = (employee: Employee) => {
-    setEmployees((prev) => {
-      const exists = prev.some((e) => e.id === employee.id);
-      if (exists) {
-        return prev.map((e) => (e.id === employee.id ? employee : e));
+  const handleSaveEmployee = async (employee: Employee) => {
+    const confirmSave = window.confirm(
+      `Are you sure you want to ${editEmployee ? "update" : "add"} this customer?`
+    );
+    console.log(employee)
+    console.log(typeof employee.salary);
+    if (!confirmSave) return;
+    try{
+      if (editEmployee) {
+        await apiPut(`/employees/${editEmployee.id}`, employee);
+        setEmployees((prev) =>
+          prev.map((e) =>
+            e.id === editEmployee.id ? { ...e, ...employee } : e
+          )
+        );
+      } else {
+        const tempId = `temp-${Date.now()}`;
+        setEmployees(prev => [
+          ...prev,
+          { ...employee, id: tempId, status: "active", isSaving: true },
+        ]);
+
+        try {
+          const savedEmployee = await apiPost(`/employees`, employee);
+
+          // Replace temp record with real one
+          setEmployees(prev =>
+            prev.map(e =>
+              e.id === tempId ? savedEmployee : e
+            )
+          );
+        } catch (err) {
+          setEmployees(prev => prev.filter(e => e.id !== tempId));
+          throw err; // rethrow so outer catch handles toast
+        }
       }
-      return [
-        ...prev,
-        {
-          ...employee,
-          id: `e${Date.now()}`,
-          status: "active",
-        },
-      ];
-    });
-    setShowModal(false);
-    setEditEmployee(null);
+
+      // loadEmployees();
+      toast(`Employee ${editEmployee ? "updated" : "added"} successfully.`);
+    }
+    catch (error: any) {
+      const message = error?.message || "An unexpected error occurred while deleting the customer.";
+
+            console.error("Delete failed:", error);
+            toast.error(message);
+    } finally {
+      setShowModal(false);
+      setEditEmployee(null);
+    }
   };
 
-  const handleDelete = (employeeToDelete: Employee) => {
+  const handleClose = () => {
+      setEditEmployee(null)
+      setShowModal(false)
+  }
+
+  const handleDelete = async (employeeToDelete: Employee) => {
     const confirmDelete = window.confirm(
       `Are you sure you want to delete "${employeeToDelete.firstName}"?`
     )
     if (!confirmDelete) return
-    setEmployees((prev) => prev.filter((e) => e.id !== employeeToDelete.id));
+    try {
+        await apiDelete(`/employees/${employeeToDelete.id}`);
+        setEmployees((prev) => prev.filter((e) => e.id !== employeeToDelete.id));
+        toast.success("Employee deleted successfully");
+    } catch (err: any) {
+        const message = err?.message || "An unexpected error occurred while deleting the customer.";
+
+        console.error("Delete failed:", err);
+        toast.error(message);
+    }
   };
 
   const handleEdit = (employee: Employee) => {
@@ -187,8 +259,8 @@ export default function Employees() {
           durationSec={1.2}
         />
         <Card
-          title="Avg. Hourly Rate"
-          number={avgHourlyRate}
+          title="Avg. Salary"
+          number={avgSalary}
           date = {new Date().toString()}
           prefix="$"
           icon={<DollarSign className="text-brand-700" />}
@@ -220,8 +292,9 @@ export default function Employees() {
           data={paginatedEmployees}
           sortField={sortField}
           sortOrder={sortOrder}
+          loading={loading}
           onSort={(field) => handleSort(field as any)}
-          onRowClick={(c) => {router.push(`/employees/${c.id}`)}}
+          // onRowClick={(c) => {router.push(`/employees/${c.id}`)}}
           columns={[
             {
               key: "name",
@@ -274,7 +347,11 @@ export default function Employees() {
                   <button
                       className="text-gray-400 hover:text-blue-500 transition-colors"
                       title="Edit"
-                      onClick={() => handleEdit(c)}
+                      onClick={(e) =>
+                      {
+                          e.stopPropagation();
+                          handleEdit(c)
+                      } }
                   >
                       <MdOutlineModeEdit size={20} />
                   </button>
@@ -300,10 +377,7 @@ export default function Employees() {
 
       {showModal && (
         <AddNewEmployee
-          onClose={() => {
-            setShowModal(false);
-            setEditEmployee(null);
-          }}
+          onClose={handleClose}
           onSave={handleSaveEmployee}
           initialData={editEmployee}
         />

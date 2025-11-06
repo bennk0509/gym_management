@@ -1,108 +1,3 @@
-// "use client"
-
-// import { motion, AnimatePresence } from "framer-motion"
-// import { format } from "date-fns"
-// import { Session } from "@/data/sessions"
-// import { MdEdit, MdDelete, MdClose } from "react-icons/md"
-
-// type Props = {
-//   session: Session
-//   position?: "left" | "right" | "center"
-//   visible: boolean
-//   onEdit?: (session: Session) => void
-//   onDelete?: (session: Session) => void
-// }
-
-// export default function SessionHoverCard({
-//   session,
-//   position = "right",
-//   visible,
-//   onEdit,
-//   onDelete,
-// }: Props) {
-//   return (
-//     <AnimatePresence>
-//       {visible && (
-//         <motion.div
-//           key={session.id}
-//           initial={{ opacity: 0, scale: 0.95, y: -5 }}
-//           animate={{ opacity: 1, scale: 1, y: 0 }}
-//           exit={{ opacity: 0, scale: 0.95, y: -5 }}
-//           transition={{ duration: 0.15, ease: "easeOut" }}
-//           className={`absolute ${
-//             position === "right"
-//               ? "top-0 left-full ml-2"
-//               : position === "left"
-//               ? "top-0 right-full mr-2"
-//               : "top-0 mt-2 left-1/2 -translate-x-1/2"
-//           } w-72 bg-neutral-light text-black shadow-lg rounded-xl p-4 z-50`}
-//         >
-//             {/* Header */}
-//             <div className="flex flex-row-reverse gap-5 pb-5">
-//                 <button>
-//                     <MdEdit className="w-5 h-5 text-gray-500"/>
-//                 </button>
-//                 <button type="button">
-//                     <MdDelete className="w-5 h-5 text-gray-500"/>
-//                 </button>
-//                 <button type="button">
-//                     <MdClose className="w-5 h-5 text-gray-500"/>
-//                 </button>
-//             </div>
-//           {/* Title */}
-//           <div className="flex items-center justify-between">
-//             <h4 className="font-semibold text-brand-800 truncate max-w-[180px]">
-//               {session.title}
-//             </h4>
-//             <span
-//               className={`text-xs px-2 py-1 rounded capitalize text-white ${
-//                 session.status === "done"
-//                   ? "bg-green-500"
-//                   : session.status === "new"
-//                   ? "bg-yellow-500"
-//                   : "bg-red-500"
-//               }`}
-//             >
-//               {session.status}
-//             </span>
-//           </div>
-
-//           {/* Time */}
-//           <p className="text-sm text-gray-600 mt-1">
-//             {format(session.start, "EEE, MMM d")} <br />
-//             {format(session.start, "HH:mm")} – {format(session.end, "HH:mm")}
-//           </p>
-
-//           {/* Customer & Employee */}
-//           <p className="text-sm mt-2">
-//             <span className="font-medium">Customer:</span>{" "}
-//             {session.customer || <span className="italic text-gray-400">No customer</span>}
-//           </p>
-//           <p className="text-sm">
-//             <span className="font-medium">Employee:</span> {session.employee}
-//           </p>
-
-//           {/* Actions */}
-//           <div className="flex justify-end gap-2 mt-3">
-//             <button
-//               onClick={() => onEdit?.(session)}
-//               className="flex items-center gap-1 text-sm px-3 py-1 rounded-md border border-neutral-200 hover:bg-neutral-100"
-//             >
-//               <MdEdit /> Edit
-//             </button>
-//             <button
-//               onClick={() => onDelete?.(session)}
-//               className="flex items-center gap-1 text-sm px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50"
-//             >
-//               <MdDelete /> Delete
-//             </button>
-//           </div>
-//         </motion.div>
-//       )}
-//     </AnimatePresence>
-//   )
-// }
-
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
@@ -117,6 +12,7 @@ type Props = {
   onEdit: (session: Session) => void
   onDelete: (session: Session) => void
   onClose: () => void
+  onMarkComplete: (session: Session) => void
 }
 
 export default function SessionHoverCard({
@@ -125,7 +21,8 @@ export default function SessionHoverCard({
   visible,
   onEdit,
   onDelete,
-  onClose
+  onClose,
+  onMarkComplete
 }: Props) {
   return (
     <AnimatePresence>
@@ -161,7 +58,7 @@ export default function SessionHoverCard({
               <CalendarDays className="w-4 h-4 text-yellow-700" />
               {session.title}
             </h3>
-            <div className="flex flex-row-reverse gap-5"> 
+            <div className="flex flex-row-reverse gap-5">
                 <button type="button" onClick={() => onEdit(session)}> 
                     <MdEdit className="w-5 h-5 text-gray-500"/> 
                 </button> 
@@ -171,7 +68,7 @@ export default function SessionHoverCard({
                 </button> 
                 <button type="button" onClick={onClose}> 
                     <MdClose className="w-5 h-5 text-gray-500"/> 
-                    </button> 
+                </button> 
             </div>
             {/* <span
               className={`text-xs px-2 py-1 rounded-full capitalize text-brand-primary ${
@@ -246,11 +143,21 @@ export default function SessionHoverCard({
           </div>
 
           {/* Footer */}
-          <div className="p-4 flex justify-between items-center text-xs">
-            <span className="text-gray-500">Ref #{session.id}</span>
-            <span className="font-semibold text-yellow-800">
-              ${session.totalPrice.toFixed(2)}
-            </span>
+          <div className="p-4 border-t border-gray-200 flex justify-end">
+            <button
+              type="button"
+              onClick={() => onMarkComplete?.(session)}
+              className={`px-4 py-2 rounded-xl font-medium text-sm shadow-sm transition-all ${
+                session.status === "done"
+                  ? "bg-gray-100 text-gray-500 cursor-not-allowed":
+                session.status == 'cancel' 
+                  ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                  : "bg-[#FFC107] text-[#1E1E1E] hover:bg-[#e0a900]"
+              }`}
+              disabled={session.status === "done"}
+            >
+              {session.status === "done" ? "Completed": session.status == 'cancel'? "Cancelled" : "Mark as Complete"}
+            </button>
           </div>
         </motion.div>
       )}

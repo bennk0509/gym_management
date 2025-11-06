@@ -2,12 +2,19 @@
 import { CalendarDays, User, Dumbbell } from "lucide-react";
 import { mockSessions } from "@/data/sessions";
 
-export default function UpcomingSessionsCard() {
-  const upcoming = mockSessions
-    .filter((s) => s.status === "new")
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 4);
-
+interface UpcomingSessionsCardProps {
+  upcoming: {
+    id: string;
+    title: string;
+    date: string;
+    time: string;
+    service: string;
+    type: "gym" | "therapy";
+    customer: string;
+    employee: string;
+  }[];
+}
+export default function UpcomingSessionsCard({upcoming}: UpcomingSessionsCardProps) {
   return (
     <div className="bg-white border border-gray-100 shadow-md rounded-2xl p-6 hover:shadow-lg transition-all duration-300">
       {/* Header */}
@@ -61,7 +68,12 @@ export default function UpcomingSessionsCard() {
 
               {/* Right: Time */}
               <div className="text-sm text-gray-500 font-medium">
-                {s.time ?? "—"}
+              {s.time
+              ? new Date(s.time).toLocaleTimeString([], {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })
+              : "—"}
               </div>
             </div>
           ))

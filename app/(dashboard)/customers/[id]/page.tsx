@@ -1,50 +1,62 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, User, Phone, Mail, Calendar, DollarSign, Activity } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import Card from "@/components/Card";
 import DataTable from "@/components/DataTable";
-import { mockCustomers, mockSessions, mockPayments } from "@/data/sessions";
-import { Session, Payment } from "@/data/sessions";
+import { apiGet } from "@/lib/api";
+import { CustomerDetail } from "@/types/types";
+
 
 export default function CustomerDetailPage() {
   const { id } = useParams();
   const router = useRouter();
 
-  // 🔹 Get customer
-  const customer = mockCustomers.find((c) => c.id === id);
-  const sessions = mockSessions.filter((s) => s.customer === customer?.id);
-  const payments = mockPayments.filter((p) => p.relatedId === customer?.id);
+  const [customer, setCustomer] = useState<CustomerDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    async function fetchCustomer() {
+      try {
+        setLoading(true);
+        const data = await apiGet(`/customers/${id}`);
+        setCustomer(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load customer data.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (id) fetchCustomer();
+  }, [id]);
 
-  if (!customer) {
+  if (loading) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-gray-500">Customer not found.</p>
+      <div className="p-10 text-center text-gray-500">Loading customer...</div>
+    );
+  }
+  if (error || !customer) {
+    return (
+      <div className="p-10 text-center text-gray-500">
+        {error || "Customer not found."}
       </div>
     );
   }
 
-  // 🔹 Stats
-  const totalSessions = sessions.length;
-  const completedSessions = sessions.filter((s) => s.status === "done").length;
-  const totalSpent = useMemo(() => {
-    return payments
-      .filter((p) => p.status === "paid")
-      .reduce((sum, p) => sum + p.amount + (p.tax || 0) + (p.tip || 0), 0);
-  }, [payments]);
-
-  const lastPaymentDate = payments.length
-    ? new Date(
-        Math.max(...payments.map((p) => new Date(p.dateReceived).getTime()))
-      ).toLocaleDateString()
+  const totalSessions = customer.stats.totalSessions;
+  const completedSessions = customer.stats.completedSessions;
+  const totalSpent = customer.stats.totalSpent;
+  const lastPaymentDate = customer.stats.lastPayment
+    ? new Date(customer.stats.lastPayment.date).toLocaleDateString()
     : "N/A";
 
   return (
     <div className="p-10 space-y-8 h-screen">
       {/* Header */}
       <DashboardHeader
-          title={`${customer.firstName} ${customer.lastName}`}
+          title={`${customer.fullName}`}
           buttonText="← Back to Customers"
           onButtonClick={() => router.push("/customers")}
         />
@@ -58,9 +70,11 @@ export default function CustomerDetailPage() {
             </div>
             <div>
               <h2 className="text-2xl font-semibold text-brand-primary">
-                {customer.firstName} {customer.lastName}
+                {customer.fullName}
               </h2>
-              <p className="text-gray-500 capitalize">{customer.dateOfBirth}</p>
+              <p className="text-gray-500 capitalize">{customer.dob
+                  ? new Date(customer.dob).toLocaleDateString()
+                  : "No DOB"}</p>
             </div>
           </div>
 
@@ -73,7 +87,9 @@ export default function CustomerDetailPage() {
             </p>
             <p className="flex items-center gap-2">
               <Calendar size={18} className="text-gray-400" /> Joined{" "}
-              {new Date(customer.joinDate).toLocaleDateString()}
+              {customer.joinDate
+                ? new Date(customer.joinDate).toLocaleDateString()
+                : "N/A"}
             </p>
           </div>
         </div>
@@ -114,7 +130,8 @@ export default function CustomerDetailPage() {
           Session History
         </h3>
         <DataTable
-          data={sessions}
+          data={customer.sessionHistory}
+          loading = {loading}
           columns={[
             { key: "title", header: "Session Title" },
             { key: "type", header: "Type", render: (s) => s.type.toUpperCase() },
@@ -151,7 +168,8 @@ export default function CustomerDetailPage() {
           Payment History
         </h3>
         <DataTable
-          data={payments}
+          data={customer.paymentHistory}
+          loading = {loading}
           columns={[
             { key: "paymentType", header: "Type" },
             {

@@ -1,8 +1,7 @@
 "use client"
 import React from "react"
 import { RiExpandUpDownLine } from "react-icons/ri"
-import { DataTableProps } from "@/data/sessions"
-
+import { DataTableProps } from "@/types/types"
 
 /**
  * A fully reusable, flexible data table component
@@ -14,6 +13,7 @@ export default function DataTable<T extends { id: string | number }>({
   sortOrder,
   onSort,
   onRowClick,
+  loading = false,
   emptyMessage = "No records found",
   maxHeight = "650px",
 }: DataTableProps<T>) {
@@ -54,7 +54,17 @@ export default function DataTable<T extends { id: string | number }>({
 
         {/* ---- TABLE BODY ---- */}
         <tbody>
-          {data.length > 0 ? (
+          {loading ? (
+            Array.from({ length: 5 }).map((_, rowIdx) => (
+              <tr key={`skeleton-${rowIdx}`} className="animate-pulse">
+                {columns.map((_, colIdx) => (
+                  <td key={colIdx} className="p-4">
+                    <div className="h-4 bg-gray-200 rounded w-full" />
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : data.length > 0 ? (
             data.map((row) => (
               <tr
                 key={row.id}
@@ -72,7 +82,7 @@ export default function DataTable<T extends { id: string | number }>({
             <tr>
               <td
                 colSpan={columns.length}
-                className=""
+                className="py-8 text-center text-gray-400"
               >
                 {emptyMessage}
               </td>

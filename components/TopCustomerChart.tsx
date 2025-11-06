@@ -9,29 +9,17 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { mockSessions, mockCustomers } from "@/data/sessions";
 
-export default function ActiveCustomersChart() {
-  const customerActivity = mockCustomers
-    .filter((c) => c.status === "active")
-    .map((c) => {
-    const custSessions = mockSessions.filter(
-        (s) =>
-            s.customer.trim().toLowerCase() ===
-            `${c.firstName} ${c.lastName}`.trim().toLowerCase() &&
-            s.status === "done"
-        );
-      const totalSpent = custSessions.reduce((sum, s) => sum + s.totalPrice, 0);
-      
-      return {
-        name: `${c.firstName} ${c.lastName}`,
-        sessions: custSessions.length,
-        spent: totalSpent,
-      };
-    })
-    .sort((a, b) => b.sessions - a.sessions)
-    .slice(0, 5);
+interface ActiveCustomersChartProps {
+  customerActivity: {
+    name: string;
+    sessions: number;
+    spent: number;
+  }[];
+}
 
+
+export default function ActiveCustomersChart({customerActivity}: ActiveCustomersChartProps) {
   return (
     <div className="bg-white border border-gray-200 shadow-md rounded-xl p-6 flex flex-col">
       <h3 className="text-lg font-semibold mb-4 text-brand-primary">
@@ -48,9 +36,22 @@ export default function ActiveCustomersChart() {
             tick={{ fontSize: 12, fill: "#555" }}
           />
           <Tooltip
-            formatter={(val: number, key: string) =>
-              key === "sessions" ? [`${val} sessions`] : [`$${val}`]
-            }
+            contentStyle={{
+              backgroundColor: "rgba(255,255,255,0.95)",
+              borderRadius: "10px",
+              border: "1px solid #eee",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+            }}
+            formatter={(value: any, name: string) => {
+              if (name === "revenue") {
+                return [`$${value.toLocaleString()}`, "Revenue"];
+              }
+              if (name === "sessions") {
+                return [`${value}`, "Sessions"];
+              }
+              return [value, name];
+            }}
+            labelStyle={{ fontWeight: "bold", color: "#111" }}
           />
           <Bar dataKey="sessions" fill="#ffc107" radius={[0, 6, 6, 0]} barSize={16} />
         </BarChart>

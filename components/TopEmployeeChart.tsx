@@ -11,25 +11,17 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { mockSessions, mockEmployees } from "@/data/sessions";
 
-export default function TopEmployeesPerformanceChart() {
-  // 🔹 Aggregate revenue & sessions per employee
-  const employeeStats = mockEmployees.map((emp) => {
-    const empSessions = mockSessions.filter(
-      (s) => s.employee === emp.firstName + " " + emp.lastName && s.status === "done"
-    );
-    const totalRevenue = empSessions.reduce((sum, s) => sum + s.totalPrice, 0);
-    return {
-      name: `${emp.firstName} ${emp.lastName}`,
-      revenue: totalRevenue,
-      sessions: empSessions.length,
-    };
-  });
 
-  const topEmployees = employeeStats
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5);
+interface TopEmployeesPerformanceProps {
+  topEmployees: {
+    name: string;
+    revenue: number;
+    sessions: number; 
+  }[];
+}
+
+export default function TopEmployeesPerformanceChart({topEmployees}: TopEmployeesPerformanceProps) {
 
   return (
     <div className="bg-white border border-gray-200 shadow-md rounded-xl p-6 flex flex-col">
@@ -48,10 +40,14 @@ export default function TopEmployeesPerformanceChart() {
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="name"
-            tick={{ fill: "#555", fontSize: 12 }}
+            tick={{
+              fill: "#555",
+              fontSize: 12,
+            }}
             axisLine={false}
             tickLine={false}
             interval={0}
+            angle={-45}
           />
           <YAxis
             yAxisId="left"

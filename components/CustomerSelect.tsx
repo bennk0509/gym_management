@@ -11,7 +11,6 @@ export default function CustomerSelect({
   const [searchTerm, setSearchTerm] = useState("")
   const [isOpen, setIsOpen] = useState(false)
 
-  // ✅ Keep searchTerm synced with prop value (for edit mode)
   useEffect(() => {
     if (value) {
       setSearchTerm(`${value.firstName} ${value.lastName}`)
@@ -38,7 +37,7 @@ export default function CustomerSelect({
     <div className="relative w-full">
       <input
         type="text"
-        placeholder="Select Customer (optional)"
+        placeholder="Enter Customer"
         value={searchTerm}
         onChange={(e) => {
           setSearchTerm(e.target.value)

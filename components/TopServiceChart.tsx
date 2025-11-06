@@ -1,5 +1,5 @@
 "use client"
-import { Service } from "@/data/sessions"
+import { Service } from "@/types/types"
 
 interface TopServiceChartProps {
   topServices: (Service & { percent: number })[]

@@ -1,11 +1,9 @@
 "use client"
 
 import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react"
-import { RiArrowDownSLine, RiExpandUpDownLine } from "react-icons/ri";
-import { Customer, mockCustomers, mockSessions } from "@/data/sessions"
-import { Users, Activity, DollarSign, UserMinus, Search } from "lucide-react"
-import { MdCalendarMonth, MdFilterAlt, MdOutlineDeleteForever, MdOutlineModeEdit, MdOutlineRemoveRedEye, MdOutlineSettingsInputComponent, MdRefresh } from "react-icons/md";
+import { useState, useEffect } from "react"
+import { Users, Activity, DollarSign, UserMinus } from "lucide-react"
+import { MdOutlineDeleteForever, MdOutlineModeEdit, MdOutlineRemoveRedEye} from "react-icons/md";
 import Card from "@/components/Card"
 import DashboardHeader from "@/components/DashboardHeader";
 import CustomerSearchBar from "@/components/CustomerSearchBar";
@@ -13,14 +11,17 @@ import FiltersPanel from "@/components/FilterPanel";
 import DataTable from "@/components/DataTable";
 import Pagination from "@/components/Pagination";
 import AddNewCustomer from "@/components/AddNewCustomer";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
+import {Customer} from "@/types/types";
+import {useDebounce} from "use-debounce"
+import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
 export default function Customers() {
     const router = useRouter();
     const [query, setQuery]             = useState("")
-    const [currentPage, setCurrentPage] = useState(1)
     const rowsPerPage                   = 10
-    const totalPages                    = Math.ceil(mockCustomers.length / rowsPerPage)
-    const [sortField, setSortField]     = useState<"name" | "status" | "total" | null>(null)
+    const [sortField, setSortField] = useState<string>("joinDate");
     const [sortOrder, setSortOrder]     = useState<"asc" | "desc">("asc")
     const [status, setStatus]           = useState<"all" | "active" | "inactive">("all")
     const currentDate                   = new Date()
@@ -30,159 +31,148 @@ export default function Customers() {
     const [minSpend, setMinSpend] = useState(0)
     const [showModal, setShowModal] = useState(false)
     const [editCustomer, setEditCustomer] = useState<Customer|null>(null)
-    const [customers, setCustomer] = useState<Customer[]>(mockCustomers);
+    const [debouncedMinSpend] = useDebounce(minSpend, 500);
+    const [debouncedQuery] = useDebounce(query, 400);
+    const searchParams = useSearchParams();
+    const initialPage = Number(searchParams.get("page") || 1);
+    const [currentPage, setCurrentPage] = useState(initialPage);
 
-    // Calculate dashboard stats
-    const totalCustomers = customers.length
-    const activeCustomers = customers.filter(c => c.status === "active").length
-    const inactiveCustomers = customers.filter(c => c.status === "inactive").length
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [pagination, setPagination] = useState({
+        total: 0,
+        totalPages: 1,
+        page: 1,
+    });
+    const [stats, setStats] = useState({
+        totalCustomers: 0,
+        activeCustomers: 0,
+        inactiveCustomers: 0,
+        avgSpending: 0,
+    });
+    const [loading, setLoading] = useState(true);
+    async function fetchData() {
+        try {
+          setLoading(true);
+          const queryObj: Record<string, string> = {};
 
-    const avgSpent = useMemo(() => {
-        const totals = customers.map((c) => {
-          const fullName = `${c.firstName} ${c.lastName}`;
-          const sessions = mockSessions.filter((s) => s.customer === fullName);
-          return sessions
-            .filter((s) => s.status !== "cancel")
-            .reduce((sum, s) => sum + s.totalPrice, 0);
-        });
-        return totals.length
-          ? Math.round(totals.reduce((a, b) => a + b, 0) / totals.length)
-          : 0;
-    }, [customers]);
+          if (status && status !== "all") queryObj.status = status;
+          if (query) queryObj.search = debouncedQuery;
+          if (joinStart) queryObj.joinStart = joinStart;
+          if (joinEnd) queryObj.joinEnd = joinEnd;
+          if (minSpend) queryObj.minSpend = debouncedMinSpend.toString();
 
-    const filteredCustomers = useMemo(() => {
-        return customers.filter((customer) => {
-          const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
-          const matchQuery =
-            fullName.includes(query.toLowerCase()) ||
-            customer.email.toLowerCase().includes(query.toLowerCase()) ||
-            customer.phone.includes(query);
-    
-          const matchStatus = status === "all" || customer.status === status;
-    
-          const joinDate = new Date(customer.joinDate || new Date());
-          const matchJoinStart = !joinStart || joinDate >= new Date(joinStart);
-          const matchJoinEnd = !joinEnd || joinDate <= new Date(joinEnd);
-    
-          const totalSpent = mockSessions
-            .filter(
-              (s) =>
-                s.customer === `${customer.firstName} ${customer.lastName}` &&
-                s.status !== "cancel"
-            )
-            .reduce((sum, s) => sum + s.totalPrice, 0);
-    
-          const matchSpend = totalSpent >= minSpend;
-    
-          return matchQuery && matchStatus && matchJoinStart && matchJoinEnd && matchSpend;
-        });
-      }, [customers, query, status, joinStart, joinEnd, minSpend]);
-      
-    const handleSort = (field: "name" | "status" | "total") => {
-        if (sortField === field) {
-            // same field → toggle asc/desc
-            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-        } else {
-            // new field → reset to ascending
-            setSortField(field)
-            setSortOrder("asc")
+          queryObj.page = currentPage.toString();
+          queryObj.take = rowsPerPage.toString();
+          queryObj.sort = sortField || "joinDate";
+          queryObj.order = sortOrder;
+
+          const queryParams = new URLSearchParams(queryObj);
+  
+          const customerData = await apiGet(`/customers?${queryParams.toString()}`);
+  
+          setCustomers(customerData.data);
+          setPagination(customerData.pagination);
+  
+          const statsData = await apiGet(`/customers/stats`);
+          setStats(statsData);
+        } catch (err) {
+          console.error("Failed to load customers:", err);
+        } finally {
+          setLoading(false);
         }
     }
-    const sortedCustomers = useMemo(() => {
-        const customersCopy = [...filteredCustomers]
-      
-        return customersCopy.sort((a, b) => {
-          const fullA = `${a.firstName} ${a.lastName}`.toLowerCase()
-          const fullB = `${b.firstName} ${b.lastName}`.toLowerCase()
-      
-          if (sortField === "name") {
-            return sortOrder === "asc"
-              ? fullA.localeCompare(fullB)
-              : fullB.localeCompare(fullA)
-          }
-      
-          if (sortField === "status") {
-            return sortOrder === "asc"
-              ? a.status.localeCompare(b.status)
-              : b.status.localeCompare(a.status)
-          }
-      
-          if (sortField === "total") {
-            const totalA = mockSessions
-              .filter(
-                (s) => s.customer === `${a.firstName} ${a.lastName}` && s.status !== "cancel"
-              )
-              .reduce((sum, s) => sum + s.totalPrice, 0)
-            const totalB = mockSessions
-              .filter(
-                (s) => s.customer === `${b.firstName} ${b.lastName}` && s.status !== "cancel"
-              )
-              .reduce((sum, s) => sum + s.totalPrice, 0)
-            return sortOrder === "asc" ? totalA - totalB : totalB - totalA
-          }
-      
-          return 0
-        })
-    }, [filteredCustomers, sortField, sortOrder])
+    useEffect(() => {
+        console.log(customers);
+    
+        fetchData();
+      }, [status, debouncedQuery, joinStart, joinEnd, debouncedMinSpend, currentPage, sortField, sortOrder]);
+    
 
-    const paginatedCustomers = useMemo(() => {
-        return sortedCustomers.slice(
-          (currentPage - 1) * rowsPerPage,
-          currentPage * rowsPerPage
-        )
-    }, [sortedCustomers, currentPage, rowsPerPage])
+    const { totalCustomers, activeCustomers, inactiveCustomers, avgSpending } =stats;
     const resetEverything = () =>
     {
         setCurrentPage(1)
-        setSortField(null)
+        setSortField("")
         setJoinStart("")
         setJoinEnd("")
         setMinSpend(0)
         setQuery("")
         setStatus("all")
     }
+    const handlePageChange = (page: number) => {
+        if (page < 1 || page > pagination.totalPages) return;
+        setCurrentPage(page);
+        router.push(`/customers?page=${page}`, { scroll: false });
+    };
 
     const handleClose = () => {
         setEditCustomer(null)
         setShowModal(false)
     }
-    const handleSaveCustomer = (customer: Customer) => {
-        setCustomer((prev) => {
-          const exists = prev.some((c) => c.id === customer.id);
+    const handleSaveCustomer = async (customer: Customer) => {
+        const confirmSave = window.confirm(
+          `Are you sure you want to ${editCustomer ? "update" : "add"} this customer?`
+        );
+        if (!confirmSave) return;
       
-          if (exists) {
-            // 🔹 Edit mode: replace existing customer
-            return prev.map((c) => (c.id === customer.id ? customer : c));
+        try {
+          if (editCustomer) {
+            // PUT request for update
+            await apiPut(
+              `/customers/${editCustomer.id}`,
+              customer
+            );
+            await fetchData();
+          } else {
+            // POST request for new customer
+            await apiPost(`/customers`, customer);
+            await fetchData();
           }
       
-          // 🔹 New customer mode: generate new record
-          const newCustomer: Customer = {
-            ...customer,
-            id: `c${Date.now()}`, // unique ID
-            joinDate: new Date().toISOString().split("T")[0], // today's date
-            status: "active",
-          };
-      
-          return [...prev, newCustomer];
-        });
-      
-        // ✅ Close modal afterward
-        setEditCustomer(null);
-        setShowModal(false);
+          toast(`Customer ${editCustomer ? "updated" : "added"} successfully.`);
+        } catch (err: any) {
+            const message = err?.message || "An unexpected error occurred while deleting the customer.";
+
+            console.error("Delete failed:", err);
+            toast.error(message);
+        } finally {
+          setShowModal(false);
+          setEditCustomer(null);
+        }
     };
+      
 
     const handleEdit = (customer: Customer) => {
         setEditCustomer(customer);
         setShowModal(true);
     };
 
-    const handleDeleteCustomer = (customerToDelete: Customer) => {
+    const handleDeleteCustomer = async (customerToDelete: Customer) => {
         const confirmDelete = window.confirm(
             `Are you sure you want to delete "${customerToDelete.firstName}"?`
-        )
-        if (!confirmDelete) return
-        setCustomer((prev) => prev.filter((c) => c.id !== customerToDelete.id));
-    }
+        );
+        if (!confirmDelete) return;
+        
+        try {
+            await apiDelete(`/customers/${customerToDelete.id}`);
+            await fetchData();
+            setCustomers((prev) => prev.filter((c) => c.id !== customerToDelete.id));
+            toast.success("Customer deleted successfully");
+        } catch (err: any) {
+            const message = err?.message || "An unexpected error occurred while deleting the customer.";
+
+            console.error("Delete failed:", err);
+            toast.error(message);
+        }
+    };
+    const handleSort = (field: string) => {
+        if (sortField === field) {
+          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+        } else {
+          setSortField(field);
+          setSortOrder("asc");
+        }
+      };
 
     return (
         <div className="p-10 space-y-8 h-screen">
@@ -217,7 +207,7 @@ export default function Customers() {
                 />
                 <Card
                     title = "Avg. Spending"
-                    number = {avgSpent}
+                    number = {avgSpending}
                     date = {currentDate.toString()}
                     durationSec={1.6} 
                     prefix="$"
@@ -246,11 +236,15 @@ export default function Customers() {
                     />
                 )}
                 <DataTable
-                    data={paginatedCustomers}
+                    data={customers.map((c, i) => ({
+                        ...c,
+                        id: c.id ?? `temp-${i}`, // fallback ID
+                    }))}
                     sortField={sortField}
                     sortOrder={sortOrder}
                     onSort={(field) => handleSort(field as any)}
-                    onRowClick={(row) => router.push(`/customers/${row.id}`)}
+                    // onRowClick={(row) => router.push(`/customers/${row.id}`)}
+                    loading = {loading}
                     columns={[
                         {
                         key: "name",
@@ -264,7 +258,18 @@ export default function Customers() {
                         },
                         { key: "email", header: "Email" },
                         { key: "phone", header: "Phone" },
-                        { key: "dateOfBirth", header: "DOB" },
+                        { key: "dateOfBirth",
+                            header: "DOB",
+                            render: (c) => {
+                              if (!c.dateOfBirth) return "—";
+                              const date = new Date(c.dateOfBirth);
+                              return date.toLocaleDateString("vi-VN", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              });
+                            }, 
+                        },
                         {
                         key: "status",
                         header: "Status",
@@ -272,7 +277,7 @@ export default function Customers() {
                         render: (c) => (
                             <span
                             className={`text-xs px-2 py-1 rounded-full capitalize text-brand-primary ${
-                                c.status === "active" ? "bg-sucess" : "bg-error"
+                                c.status === "active" ? "bg-sucess text-green-100" : "bg-error text-red-100"
                             }`}
                             >
                             {c.status}
@@ -283,14 +288,7 @@ export default function Customers() {
                         key: "totalSpent",
                         header: "Total Spent",
                         sortable: true,
-                        render: (c) => {
-                            const fullName = `${c.firstName} ${c.lastName}`
-                            const sessions = mockSessions.filter((s) => s.customer === fullName)
-                            const total = sessions
-                            .filter((s) => s.status !== "cancel")
-                            .reduce((sum, s) => sum + s.totalPrice, 0)
-                            return `$${total}`
-                        },
+                        render: (c) => `$${c.totalSpent || 0}`,
                         },
                         {
                         key: "actions",
@@ -300,21 +298,27 @@ export default function Customers() {
                             <button
                                 className="text-gray-400 hover:text-brand-600 transition-colors"
                                 title="View"
-                                onClick={() => router.push(`/employees/${c.id}`)}
+                                onClick={() => router.push(`/customers/${c.id}?page=${currentPage}`)}
                             >
                                 <MdOutlineRemoveRedEye size={20} />
                             </button>
                             <button
                                 className="text-gray-400 hover:text-blue-500 transition-colors"
                                 title="Edit"
-                                onClick={() => handleEdit(c)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(c)}}
                             >
                                 <MdOutlineModeEdit size={20} />
                             </button>
                             <button
                                 className="text-gray-400 hover:text-red-500 transition-colors"
                                 title="Delete"
-                                onClick={() => handleDeleteCustomer(c)}
+                                onClick={(e) =>
+                                    {
+                                        e.stopPropagation();
+                                        handleDeleteCustomer(c)
+                                    } }
                             >
                                 <MdOutlineDeleteForever size={20} />
                             </button>
@@ -326,8 +330,8 @@ export default function Customers() {
                 {/* Pagination Controls */}
                 <Pagination
                     currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={handlePageChange}
                 />
             </div>
             {showModal && <AddNewCustomer

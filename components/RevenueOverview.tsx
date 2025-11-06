@@ -8,41 +8,20 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend,
 } from "recharts";
 import { ArrowUpRight } from "lucide-react";
-import { mockSessions } from "@/data/sessions";
 import { motion } from "framer-motion";
 
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-];
-
-// --- Helper: group monthly revenue ---
-function getMonthlyRevenue() {
-  const revenueByMonth: Record<string, number> = {};
-
-  for (const s of mockSessions) {
-    if (s.status === "done") {
-      const monthIndex = new Date(s.date).getMonth();
-      revenueByMonth[MONTHS[monthIndex]] =
-        (revenueByMonth[MONTHS[monthIndex]] ?? 0) + s.totalPrice;
-    }
-  }
-
-  return MONTHS.map((m) => ({
-    month: m,
-    revenue: Math.round(revenueByMonth[m] ?? 0),
-  }));
+interface RevenueOverviewProps {
+  monthlyRevenue: { month: string; revenue: number }[];
 }
 
-export default function RevenueOverview() {
-  const monthly = getMonthlyRevenue();
-
-  // calculate total and growth
-  const totalRevenue = monthly.reduce((sum, m) => sum + m.revenue, 0);
-  const growth = 5.2; // placeholder for demo
+export default function RevenueOverview({ monthlyRevenue }: RevenueOverviewProps) {
+  const totalRevenue = monthlyRevenue.reduce((sum, m) => sum + m.revenue, 0);
+  const lastMonth = monthlyRevenue.at(-2)?.revenue ?? 0;
+  const currentMonth = monthlyRevenue.at(-1)?.revenue ?? 0;
+  const growth =
+    lastMonth === 0 ? 0 : (((currentMonth - lastMonth) / lastMonth) * 100).toFixed(1);
 
   return (
     <motion.div
@@ -64,8 +43,13 @@ export default function RevenueOverview() {
         <div className="text-4xl font-bold text-gray-900">
           ${totalRevenue.toLocaleString()}
         </div>
-        <p className="text-sm text-green-600 flex items-center gap-1 mt-1">
-          <ArrowUpRight size={16} /> +{growth}% from last month
+        <p
+          className={`text-sm flex items-center gap-1 mt-1 ${
+            Number(growth) >= 0 ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          <ArrowUpRight size={16} />
+          {growth}% from last month
         </p>
       </div>
 
@@ -73,12 +57,11 @@ export default function RevenueOverview() {
       <div className="h-[260px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={monthly}
+            data={monthlyRevenue}
             margin={{ top: 20, right: 20, left: 0, bottom: 10 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
 
-            {/* X Axis */}
             <XAxis
               dataKey="month"
               tick={{ fill: "#666", fontSize: 12 }}
@@ -86,7 +69,6 @@ export default function RevenueOverview() {
               tickLine={false}
             />
 
-            {/* Y Axis with proper currency formatting */}
             <YAxis
               tick={{ fill: "#666", fontSize: 12 }}
               axisLine={false}
@@ -96,18 +78,18 @@ export default function RevenueOverview() {
               }
             />
 
-            {/* Tooltip */}
             <Tooltip
               cursor={{ fill: "rgba(0,0,0,0.05)" }}
               contentStyle={{
-                backgroundColor: "#fff",
+                backgroundColor: "rgba(255,255,255,0.95)",
+                borderRadius: "10px",
                 border: "1px solid #eee",
-                borderRadius: "8px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
               }}
               formatter={(val: number) => [`$${val.toLocaleString()}`, "Revenue"]}
+              labelStyle={{ fontWeight: "bold", color: "#111" }}
             />
-            {/* Bar */}
+
             <Bar
               dataKey="revenue"
               name="Revenue"
