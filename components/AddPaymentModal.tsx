@@ -15,6 +15,7 @@ export default function PaymentSummaryModal({
   onClose,
   onConfirm,
 }: PaymentSummaryModalProps) {
+  const [amountPaid, setAmountPaid] = useState(session.totalPrice || 0);
   const [tip, setTip] = useState(0)
   const [tax, setTax] = useState(0)
   const [method, setMethod] = useState("cash")
@@ -39,11 +40,10 @@ export default function PaymentSummaryModal({
               <CalendarDays className="w-4 h-4 text-yellow-600" /> Session Details
             </h2>
             <p className="text-sm"><span className="font-medium">Title:</span> {session.title}</p>
-            <p className="text-sm"><span className="font-medium">Service:</span> {session.serviceId}</p>
+            <p className="text-sm"><span className="font-medium">Service:</span> {session.service.name}</p>
             <p className="text-sm"><span className="font-medium">Date:</span> {new Date(session.date).toLocaleDateString()}</p>
             <p className="text-sm"><span className="font-medium">Time:</span> {session.time}</p>
-            <p className="text-sm"><span className="font-medium">Trainer:</span> {session.employee}</p>
-            <p className="text-sm"><span className="font-medium">Status:</span> <span className="capitalize">{session.status}</span></p>
+            <p className="text-sm"><span className="font-medium">Trainer:</span> {session.employee.lastName} {session.employee.firstName}</p>
           </div>
 
           {/* Customer Info */}
@@ -51,10 +51,10 @@ export default function PaymentSummaryModal({
             <h2 className="font-semibold text-gray-700 flex items-center gap-2 mb-2">
               <User className="w-4 h-4 text-yellow-600" /> Customer Info
             </h2>
-            <p className="text-sm"><span className="font-medium">Name:</span> {session.customer}</p>
-            <p className="text-sm"><span className="font-medium">Phone:</span> —</p>
-            <p className="text-sm"><span className="font-medium">Email:</span> —</p>
-            <p className="text-sm"><span className="font-medium">Notes:</span> —</p>
+            <p className="text-sm"><span className="font-medium">Name:</span> {session.customer.lastName} {session.customer.firstName}</p>
+            <p className="text-sm"><span className="font-medium">Phone:</span> {session.customer.phone}</p>
+            <p className="text-sm"><span className="font-medium">Email:</span> {session.customer.email}</p>
+            <p className="text-sm"><span className="font-medium">Notes:</span> {session.customer.notes ? session.customer.notes : "-"}</p>
           </div>
         </div>
 
@@ -63,7 +63,15 @@ export default function PaymentSummaryModal({
           <h2 className="font-semibold text-gray-700 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-yellow-600" /> Payment Breakdown
           </h2>
-
+          <div className="w-full">
+            <label className="text-xs font-medium text-gray-500">Amount Paid (VND)</label>
+            <input
+              type="number"
+              value={amountPaid}
+              onChange={(e) => setAmountPaid(+e.target.value)}
+              className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-yellow-500 focus:border-yellow-500"
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-xs font-medium text-gray-500">Tip (VND)</label>

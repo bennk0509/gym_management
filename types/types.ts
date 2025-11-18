@@ -1,24 +1,4 @@
 export type CustomerStatus = "active" | "inactive";
-
-//
-// model Customer {
-//   id             String             @id @default(cuid())
-//   firstName      String
-//   lastName       String
-//   email          String             @unique
-//   phone          String
-//   dateOfBirth    DateTime
-//   membershipType MembershipType
-//   joinDate       DateTime
-//   status         CustomerStatus
-//   notes          String?
-//   createdAt      DateTime           @default(now())
-//   updatedAt      DateTime           @updatedAt
-//   packages       Package[]
-//   schedules      ScheduleTemplate[]
-//   sessions       Session[]
-// } 
-
 export interface Customer {
   id? : string;
   firstName: string;
@@ -39,7 +19,23 @@ export interface CustomerStats {
   inactiveCustomers: number;
   avgSpending: number;
 }
+export type PackageStatus = "ACTIVE" | "USED" | "EXPRIRED" | 'CANCELLED';
+export interface Packages {
+  id?: string;
+  name: string;
+  type: SessionType;
+  totalSessions: number;
+  remaining?: number;
+  price: number;
+  status: PackageStatus;
 
+  trainerId?: string | null;
+  notes?: string;
+
+  startDate: string; // ISO date string
+  endDate?: string; // ISO date string | null
+  customerId: string;
+}
 export interface CustomerPagination {
   total: number;
   totalPages: number;
@@ -81,6 +77,7 @@ export interface CustomerDetail {
     dateReceived: string;
     method: string;
   }[];
+  packages: Packages[];
 }
 
 
@@ -132,25 +129,27 @@ export type SessionType = "gym" | "therapy"
 export type PaymentStatus = "unpaid" | "paid" | "refunded" | "pending";
 export type PaymentType = "session" | "package" | "membership";
 
-export type Session = {
-  id: string;
-  title: string;
-  customer: string;
-  employee: string;
-  date: string;
-  time: string;
-  status: SessionStatus;
-  type: SessionType;
-  start: Date;
-  end: Date;
-  serviceId: string; // link to Service
-  totalPrice: number;
-  tip?: number;
-  tax?: number;
-  paymentStatus?: PaymentStatus;
-  paymentId?: string; // link to Payments table
-  paymentType?: PaymentType;
-};
+export interface Session {
+  id: string
+  title: string
+  date: string // ISO date string
+  time: string // "08:00 - 09:00"
+  status: SessionStatus
+  type: SessionType
+  start: string // ISO datetime string
+  end: string // ISO datetime string
+  totalPrice: number
+  tip: number | null
+  tax: number | null
+  customerId: string
+  employeeId: string
+  serviceId: string | number
+  packageId: string | null
+  customer: Customer
+  employee: Employee
+  service: Service
+  payment?: Payment | null
+}
 
 export type Service = {
   id: string
@@ -159,6 +158,14 @@ export type Service = {
   durationMinutes: number
   price: number
   type: "gym" | "therapy"
+}
+
+export interface CalendarProps {
+  date: Date
+  events: Session[]
+  onEdit?: (s: Session) => void
+  onDelete?: (s: Session) => void
+  onMarkComplete?: (s:Session) => void
 }
 
 export interface EmployeeStats {

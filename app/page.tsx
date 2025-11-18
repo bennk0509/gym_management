@@ -3,7 +3,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Float, Html, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { Suspense, useRef, useMemo } from "react";
+import { Suspense, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ReactTyped } from "react-typed";
 

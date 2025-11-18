@@ -1,10 +1,4 @@
-export interface CalendarProps {
-  date: Date
-  events: Session[]
-  onEdit?: (s: Session) => void
-  onDelete?: (s: Session) => void
-  onMarkComplete?: (s:Session) => void
-}
+
 
 
 export type SessionStatus = "new" | "done" | "cancel"

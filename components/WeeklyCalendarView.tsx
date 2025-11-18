@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react"
 import { startOfWeek, addDays, format, isSameDay } from "date-fns"
-import SessionCard from "@/components/SessionCard"
 import SessionHoverCard from "./SessionHoverCard"
-import { CalendarProps, Session } from "@/data/sessions"
+import { Session, CalendarProps } from "@/types/types"
 import { SessionBox } from "./EventCard"
 
 
-export default function WeeklyCalendarView({ date, events = [],onEdit,onDelete}: CalendarProps) {
+export default function WeeklyCalendarView({ date, events = [],onEdit,onDelete, onMarkComplete}: CalendarProps) {
     const startHour = 0
     const endHour = 23
     const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i)
@@ -25,19 +24,19 @@ export default function WeeklyCalendarView({ date, events = [],onEdit,onDelete}:
     const currentMinutes = now.getMinutes()
     const top = currentHour * rowHeight + (currentMinutes / 60) * rowHeight
     function assignColumns(events: Session[]) {
-      const sorted = [...events].sort((a, b) => a.start.getTime() - b.start.getTime());
+      const sorted = [...events].sort((a, b) =>  new Date(a.start).getTime() - new Date(b.start).getTime());
       const columns: { [key: string]: number } = {};
       const clusterEndTimes: number[] = [];
 
       for (const e of sorted) {
         // Find the first column that’s free (no conflict)
         let col = 0;
-        while (clusterEndTimes[col] && clusterEndTimes[col] > e.start.getTime()) {
+        while (clusterEndTimes[col] && clusterEndTimes[col] > new Date(e.start).getTime()) {
           col++;
         }
 
         columns[e.id] = col;
-        clusterEndTimes[col] = e.end.getTime();
+        clusterEndTimes[col] = new Date(e.end).getTime();
       }
 
       const totalColumns = Math.max(...Object.values(columns)) + 1;
@@ -53,7 +52,6 @@ export default function WeeklyCalendarView({ date, events = [],onEdit,onDelete}:
         <div className="flex border-b border-neutral-200">
           {/* Empty top-left corner (for time column) */}
           <div className="w-20"></div>
-  
           {weekDays.map((day) => (
             <div
               key={day.toString()}
@@ -72,7 +70,6 @@ export default function WeeklyCalendarView({ date, events = [],onEdit,onDelete}:
             </div>
           ))}
         </div>
-  
         <div className="flex">
           {/* Time Column */}
           <div className="w-20 border-r border-neutral-200 text-right pr-2 text-xs text-gray-500">
@@ -82,14 +79,13 @@ export default function WeeklyCalendarView({ date, events = [],onEdit,onDelete}:
               </div>
             ))}
           </div>
-  
           {/* Grid Columns for each day */}
           <div className="flex-1 grid grid-cols-7 relative">
             <div
               className="absolute left-0 right-0 border-t-2 border-red-500 z-50"
               style={{ top: `${top}px` }}
             />
-            {weekDays.map((day, colIndex) => (
+            {weekDays.map((day) => (
             <div key={day.toString()} className="relative border-l border-neutral-200">
               {/* Hour rows */}
               {hours.map((h) => (
@@ -102,7 +98,7 @@ export default function WeeklyCalendarView({ date, events = [],onEdit,onDelete}:
               {/* Events for this day */}
               {assignColumns(events)
               .filter((e) => isSameDay(e.start, day))
-              .sort((a, b) => a.start.getTime() - b.start.getTime())
+              .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
               .map((e, idx, allEvents) => (
                   <SessionBox
                     key={e.id}
@@ -117,6 +113,7 @@ export default function WeeklyCalendarView({ date, events = [],onEdit,onDelete}:
                     SessionHoverCard={SessionHoverCard}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onMarkComplete={onMarkComplete}
                     view="weekly"
                   />
               ))}

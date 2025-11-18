@@ -1,7 +1,5 @@
 "use client"
 import CountUp from "react-countup"
-import { ArrowUpRight, ArrowDownRight, Users } from "lucide-react"
-
 type CardProps = {
     title: string
     number: string | number

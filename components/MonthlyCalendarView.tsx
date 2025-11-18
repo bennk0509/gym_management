@@ -1,5 +1,5 @@
 "use client"
-import { Session, CalendarProps} from "@/data/sessions"
+import {Session, CalendarProps} from "@/types/types"
 import {
   startOfMonth,
   endOfMonth,
@@ -19,8 +19,6 @@ export default function MonthlyCalendarView({ date, events = [],onEdit, onDelete
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [isHoverCard, setIsHoverCard] = useState(false)
-
 
   // find first and last visible day in the grid
   const monthStart = startOfMonth(date)

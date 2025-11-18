@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react"
-import {
-  Session,
-  mockServices,
-  Service,
-  mockEmployees,
-  mockCustomers,
-  Customer,
-} from "@/data/sessions"
+import { Customer, Employee, Session, Service, Packages } from "@/types/types"
 import {
   MdDateRange,
   MdPeopleAlt,
@@ -15,99 +8,115 @@ import {
   MdClose,
 } from "react-icons/md"
 import { LuPackage } from "react-icons/lu";
-import { HiOutlineMenuAlt2, HiExternalLink } from "react-icons/hi"
+import { HiOutlineMenuAlt2 } from "react-icons/hi"
 import CustomerSelect from "./CustomerSelect"
-
+import AddNewCustomer from "./AddNewCustomer";
+import { apiGet, apiPost } from "@/lib/api";
 interface AddSessionModalProps {
   onClose: () => void
   onSave: (session: Session) => void
+  onCustomerSearch: (term: string) => void
   initialData?: Session | null
+  customers?: Customer[]
+  employees?: Employee[],
+  services?: Service[],
+
 }
 
 export default function AddSessionModal({
   onClose,
   onSave,
+  onCustomerSearch,
   initialData,
+  customers = [],
+  employees = [],
+  services = [],
 }: AddSessionModalProps) {
-  const isEdit = !!initialData 
+
+  const isEdit = !!initialData;
 
   const [date, setDate] = useState("")
   const [startTime, setStartTime] = useState("")
   const [endTime, setEndTime] = useState("")
   const [serviceID, setServiceID] = useState("")
-  const [employee, setEmployee] = useState("")
+  const [employeeId, setEmployeeId] = useState("")       // FIX
   const [title, setTitle] = useState("")
-  const [customerPackage, setCustomerPackage] = useState("");
-  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [customerId, setCustomerId] = useState("")       // FIX
+  const [customerPackage, setCustomerPackage] = useState("")
+  const selectedService = services.find((s) => s.id === serviceID)
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [customerPackages, setCustomerPackages] = useState<Packages[]>([]);
 
-  const selectedService: Service | undefined = mockServices.find(
-    (s) => s.id === serviceID
-  )
+  const selectedCustomer = customers.find((c) => c.id === customerId) ?? null
+  console.log("Selected Customer:", selectedCustomer);
+
   useEffect(() => {
-  if (initialData) {
-    // prefill when editing
-    setDate(initialData.start.toISOString().split("T")[0])
-    setStartTime(initialData.start.toTimeString().slice(0, 5))
-    setEndTime(initialData.end.toTimeString().slice(0, 5))
-    setServiceID(initialData.serviceId)
-    setEmployee(
-        mockEmployees.find(
-        e => `${e.firstName} ${e.lastName}` === initialData.employee
-        )?.id || ""
-    )
-    setTitle(initialData.title)
-    setCustomer(
-        mockCustomers.find(
-        c => `${c.firstName} ${c.lastName}` === initialData.customer
-        ) || null
-    )
-  } else {
-    // new session defaults
-    const now = new Date()
-    const formattedDate = now.toISOString().split("T")[0]
-    const minutes = now.getMinutes()
-    const roundedMinutes = minutes < 30 ? 30 : 0
-    const roundedHours = minutes < 30 ? now.getHours() : now.getHours() + 1
-    const pad = (n: number) => (n < 10 ? "0" + n : n)
+    if (!customerId) return setCustomerPackages([]);
 
-    const start = new Date(now)
-    start.setHours(roundedHours, roundedMinutes, 0, 0)
-    const end = new Date(start.getTime() + 60 * 60 * 1000)
+    (async () => {
+      const res = await apiGet(`/packages/customer/${customerId}`);
+      console.log(res);
+      setCustomerPackages(res);
+    })();
+  }, [customerId]);
+  useEffect(() => {
+    if (initialData) {
+      // Prefill for EDIT mode
+      setDate(initialData.start.split("T")[0])
+      setStartTime(initialData.start.slice(11, 16))
+      setEndTime(initialData.end.slice(11, 16))
+      setServiceID(initialData.serviceId.toString())
+      setEmployeeId(initialData.employee?.id ?? "")
+      setCustomerId(initialData.customer?.id ?? "")
+      setTitle(initialData.title)
+    } else {
+      // NEW SESSION DEFAULTS
+      const now = new Date()
+      const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`)
 
-    setDate(formattedDate)
-    setStartTime(`${pad(start.getHours())}:${pad(start.getMinutes())}`)
-    setEndTime(`${pad(end.getHours())}:${pad(end.getMinutes())}`)
-    setServiceID("")
-    setEmployee("")
-    setCustomer(null)
-  }
-}, [initialData])
+      const formattedDate = now.toISOString().split("T")[0]
+      const minutes = now.getMinutes()
+      const roundedMinutes = minutes < 30 ? 30 : 0
+      const roundedHours = minutes < 30 ? now.getHours() : now.getHours() + 1
 
+      const start = new Date(now)
+      start.setHours(roundedHours, roundedMinutes, 0, 0)
+      const end = new Date(start.getTime() + 60 * 60 * 1000)
+
+      setDate(formattedDate)
+      setStartTime(`${pad(start.getHours())}:${pad(start.getMinutes())}`)
+      setEndTime(`${pad(end.getHours())}:${pad(end.getMinutes())}`)
+      setServiceID("")
+      setEmployeeId("")
+      setCustomerId("")
+    }
+  }, [initialData])
 
   const handleSave = () => {
-    if (!serviceID) {
-      alert("Please select a service before saving.")
+    if (!serviceID || !customerId || !employeeId) {
+      alert("Please fill all required fields.")
       return
     }
 
-    const service = selectedService!
-    const session: Session = {
-      id: initialData?.id ?? crypto.randomUUID(),
-      title: title || "New Session",
-      customer: customer ? customer.id : "",
-      employee: employee || "",
-      date,
-      time: startTime,
-      status: initialData?.status ?? "new",
-      type: service.type,
-      start: new Date(`${date}T${startTime}`),
-      end: new Date(`${date}T${endTime}`),
-      serviceId: service.id,
-      totalPrice: service.price,
-    }
+    // const session: Session = {
+    //   id: initialData?.id ?? crypto.randomUUID(),
+    //   title: title || "New Session",
+    //   status: initialData?.status ?? "new",
+    //   type: "gym", // or derive from service selection
+    //   start: new Date(`${date}T${startTime}`).toISOString(),
+    //   end: new Date(`${date}T${endTime}`).toISOString(),
+    //   totalPrice: 30, // set from service lookup later
+    //   serviceId: serviceID,
+    //   customerId,
+    //   employeeId,
+    //   customer: null,
+    //   employee: null,
+    //   createdAt: initialData?.createdAt ?? new Date().toISOString(),
+    //   updatedAt: new Date().toISOString(),
+    // }
 
-    onSave(session)
-    onClose()
+    // onSave(session)
+    // onClose()
   }
 
   return (
@@ -178,12 +187,12 @@ export default function AddSessionModal({
             <MdPeopleAlt className="w-7 h-7 text-gray-500" />
             <select
             className={`p-2 w-full border-b border-neutral-200 text-sm appearance-none
-                        ${employee === '' ? 'text-neutral-400'  : 'text-brand-primary' }`}
-            value={employee}
-            onChange={(e) => setEmployee(e.target.value)}
+                        ${employeeId === '' ? 'text-neutral-400'  : 'text-brand-primary' }`}
+                        value={employeeId}
+                        onChange={(e) => setEmployeeId(e.target.value)}
             >
             <option value="" disabled className="text-neutral-400">Select Employee</option>
-            {mockEmployees.map((s) => (
+            {employees.map((s) => (
                 <option key={s.id} value={s.id}>
                 {s.firstName} {s.lastName} ({s.role})
                 </option>
@@ -194,7 +203,13 @@ export default function AddSessionModal({
           {/* Customer */}
           <div className="flex flex-row items-center gap-10">
             <MdOutlinePeople className="w-7 h-7 text-gray-500" />
-            <CustomerSelect value={customer} onChange={setCustomer} />
+            <CustomerSelect
+              customers={customers}
+              value={selectedCustomer}
+              onChange={(c) => setCustomerId(c?.id ?? "")}
+              onSearch={onCustomerSearch}
+              onCreateCustomer={() => setShowAddCustomerModal(true)}
+            />
           </div>
 
           {/* Package */}
@@ -207,9 +222,9 @@ export default function AddSessionModal({
               onChange={(e) => setCustomerPackage(e.target.value)}
               >
               <option value="" disabled className="text-neutral-400">Select Package</option>
-              {mockEmployees.map((s) => (
-                  <option key={s.id} value={s.id}>
-                  {s.firstName} {s.lastName} ({s.role})
+              {customerPackages.map((p) => (
+                  <option key={p.id} value={p.id}>
+                  {p.name} - {p.remaining} sessions left
                   </option>
               ))}
             </select>
@@ -227,7 +242,7 @@ export default function AddSessionModal({
                 onChange={(e) => setServiceID(e.target.value)}
               >
                 <option value="" disabled className="text-neutral-400">Select Service</option>
-                {mockServices.map((s) => (
+                {services.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -269,7 +284,6 @@ export default function AddSessionModal({
             />
           </div>
         </div>
-
         {/* Footer */}
         <footer className="flex pt-5">
           <button
@@ -281,6 +295,19 @@ export default function AddSessionModal({
           </button>
         </footer>
       </form>
+
+      {showAddCustomerModal && (
+        <AddNewCustomer
+          initialData={null}
+          onClose={() => setShowAddCustomerModal(false)}
+          onSave={async (data:Customer) => {
+            const createdCustomer = await apiPost('/customers', data); // Replace with actual created customer
+            setCustomerId(createdCustomer.id);
+            onCustomerSearch(createdCustomer.firstName);
+            setShowAddCustomerModal(false);
+          }}
+        />
+      )}
     </div>
   )
 }

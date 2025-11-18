@@ -1,9 +1,6 @@
-import { format, isSameDay } from "date-fns"
+import { format} from "date-fns"
 import React, { useState } from "react"
-import { Session, SessionStatus, SessionType } from "@/data/sessions"
-import { view } from "framer-motion/client"
-import SessionDetail from "./SessionDetail"
-
+import { Session } from "@/types/types"
 interface SessionBoxProps {
   event: Session
   allEvents: Session[]
@@ -38,22 +35,24 @@ export const SessionBox: React.FC<SessionBoxProps> = ({
   onMarkComplete
 }) => {
   // Compute overlapping columns
-    const isGridView = view === "daily" || view === "weekly"
-    const overlapping = isGridView
-    ? allEvents?.filter(
-        (other) => !(event.end <= other.start || event.start >= other.end)
-        ) ?? []
-    : []
-        
-    const columnCount = isGridView ? overlapping.length : 1
-    const columnIndex = isGridView ? overlapping.findIndex((ev) => ev.id === event.id) : 0
+  const start = new Date(event.start);
+  const end = new Date(event.end);
 
-    const startHour = event.start.getHours() + event.start.getMinutes() / 60
-    const endHour = event.end.getHours() + event.end.getMinutes() / 60
-    const top = isGridView ? startHour * (rowHeight ?? 0) : 0
-    const height = isGridView ? (endHour - startHour) * (rowHeight ?? 0) : "auto"
+  const isGridView = view === "daily" || view === "weekly"
+  const overlapping = isGridView
+  ? allEvents?.filter(
+      (other) => !(new Date(event.end) <= new Date(other.start) || new Date(event.start) >= new Date(other.end))
+    ) ?? []
+  : []
+  const columnCount = isGridView ? overlapping.length : 1
+  const columnIndex = isGridView ? overlapping.findIndex((ev) => ev.id === event.id) : 0
 
-  // Hover logic
+  const startHour = start.getHours() + start.getMinutes() / 60
+  const endHour = end.getHours() + end.getMinutes() / 60
+
+  const top = isGridView ? startHour * (rowHeight ?? 0) : 0
+  const height = isGridView ? (endHour - startHour) * (rowHeight ?? 0) : "auto"
+
   const [hoverPos, setHoverPos] = useState<"left" | "right" | "center">("center")
 
   return (
@@ -75,7 +74,6 @@ export const SessionBox: React.FC<SessionBoxProps> = ({
             const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect()
             const availableRight = window.innerWidth - rect.right
             const availableLeft = rect.left
-            
             if (view === "daily")
             {
                 if (columnCount === 1 || (availableRight < 250 && availableLeft < 250)) {

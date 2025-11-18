@@ -1,13 +1,23 @@
 import { useState, useEffect } from "react"
-import { mockCustomers, Customer } from "@/data/sessions"
+import { Customer } from "@/types/types"
 
-export default function CustomerSelect({
-  value,
-  onChange,
-}: {
+interface CustomerSelectProps {
+  customers: Customer[]
   value: Customer | null
   onChange: (c: Customer | null) => void
-}) {
+  onSearch?: (term: string) => void
+  onCreateCustomer?: () => void
+}
+
+
+
+export default function CustomerSelect({
+  customers = [],
+  value,
+  onChange,
+  onSearch,
+  onCreateCustomer
+}: CustomerSelectProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [isOpen, setIsOpen] = useState(false)
 
@@ -19,7 +29,7 @@ export default function CustomerSelect({
     }
   }, [value])
 
-  const filteredCustomers = mockCustomers.filter((c) => {
+  const filteredCustomers = customers.filter((c) => {
     const fullName = `${c.firstName} ${c.lastName}`.toLowerCase()
     return (
       fullName.includes(searchTerm.toLowerCase()) ||
@@ -40,7 +50,9 @@ export default function CustomerSelect({
         placeholder="Enter Customer"
         value={searchTerm}
         onChange={(e) => {
-          setSearchTerm(e.target.value)
+          const term = e.target.value
+          setSearchTerm(term)
+          onSearch?.(term)
           setIsOpen(true)
         }}
         onFocus={() => setIsOpen(true)}
@@ -61,7 +73,15 @@ export default function CustomerSelect({
               </li>
             ))
           ) : (
-            <li className="px-3 py-2 text-gray-500 text-sm">No results found</li>
+            <li
+              className="px-3 py-2 text-blue-600 hover:bg-gray-100 cursor-pointer text-sm font-medium"
+              onClick={() => {
+                setIsOpen(false)
+                onCreateCustomer?.()
+              }}
+            >
+              + Add new customer
+            </li>
           )}
         </ul>
       )}

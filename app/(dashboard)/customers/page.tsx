@@ -114,7 +114,6 @@ export default function Customers() {
           `Are you sure you want to ${editCustomer ? "update" : "add"} this customer?`
         );
         if (!confirmSave) return;
-      
         try {
           if (editCustomer) {
             // PUT request for update
@@ -128,7 +127,6 @@ export default function Customers() {
             await apiPost(`/customers`, customer);
             await fetchData();
           }
-      
           toast(`Customer ${editCustomer ? "updated" : "added"} successfully.`);
         } catch (err: any) {
             const message = err?.message || "An unexpected error occurred while deleting the customer.";
@@ -140,7 +138,7 @@ export default function Customers() {
           setEditCustomer(null);
         }
     };
-      
+
 
     const handleEdit = (customer: Customer) => {
         setEditCustomer(customer);
@@ -295,33 +293,33 @@ export default function Customers() {
                         header: "Actions",
                         render: (c) => (
                             <div className="flex gap-3">
-                            <button
-                                className="text-gray-400 hover:text-brand-600 transition-colors"
-                                title="View"
-                                onClick={() => router.push(`/customers/${c.id}?page=${currentPage}`)}
-                            >
-                                <MdOutlineRemoveRedEye size={20} />
-                            </button>
-                            <button
-                                className="text-gray-400 hover:text-blue-500 transition-colors"
-                                title="Edit"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEdit(c)}}
-                            >
-                                <MdOutlineModeEdit size={20} />
-                            </button>
-                            <button
-                                className="text-gray-400 hover:text-red-500 transition-colors"
-                                title="Delete"
-                                onClick={(e) =>
-                                    {
+                                <button
+                                    className="text-gray-400 hover:text-brand-600 transition-colors"
+                                    title="View"
+                                    onClick={() => router.push(`/customers/${c.id}?page=${currentPage}`)}
+                                >
+                                    <MdOutlineRemoveRedEye size={20} />
+                                </button>
+                                <button
+                                    className="text-gray-400 hover:text-blue-500 transition-colors"
+                                    title="Edit"
+                                    onClick={(e) => {
                                         e.stopPropagation();
-                                        handleDeleteCustomer(c)
-                                    } }
-                            >
-                                <MdOutlineDeleteForever size={20} />
-                            </button>
+                                        handleEdit(c)}}
+                                >
+                                    <MdOutlineModeEdit size={20} />
+                                </button>
+                                <button
+                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                    title="Delete"
+                                    onClick={(e) =>
+                                        {
+                                            e.stopPropagation();
+                                            handleDeleteCustomer(c)
+                                        } }
+                                >
+                                    <MdOutlineDeleteForever size={20} />
+                                </button>
                             </div>
                         ),
                         },

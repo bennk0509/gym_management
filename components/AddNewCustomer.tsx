@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
-import { MdClose, MdEmail, MdDateRange, MdPhone, MdPeopleAlt } from "react-icons/md";
-import { HiExternalLink, HiOutlineMenuAlt2 } from "react-icons/hi";
+import { MdClose } from "react-icons/md";
 import "react-datepicker/dist/react-datepicker.css";
 import { Customer } from "@/types/types";
-import { FaSmile } from "react-icons/fa";
-
 interface AddNewCustomerProps {
   onClose: () => void;
   onSave: (customer: Customer) => void;
@@ -23,7 +20,7 @@ export default function AddNewCustomer({
   const [phone, setPhone] = useState("");
   const [date, setDate] = useState<Date | null>(null);
   const [notes, setNotes] = useState("");
-  const [membershipType, setMembershipType] = useState<
+  const [membershipType] = useState<
     "basic" | "premium" | "vip"
   >("basic");
   const [status, setStatus] = useState<"active" | "inactive">("active");
@@ -275,8 +272,6 @@ export default function AddNewCustomer({
               </button> */}
             </div>
           </div>
-          
-
           {/* Notes */}
           <div className="flex flex-col gap-2">
             <p className="font-semibold text-sm">Notes</p>

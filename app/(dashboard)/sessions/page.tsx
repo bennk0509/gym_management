@@ -7,11 +7,10 @@ import { useEffect, useState } from "react"
 import SearchBar from "@/components/SearchBar"
 import FilterBar from "@/components/FilterBar"
 
-import { Session, SessionStatus } from "@/data/sessions"
+import { Customer, Employee, Service, Session, SessionStatus } from "@/types/types"
 import AddSessionModal from "@/components/AddSessionModal"
 import PaymentSummaryModal from "@/components/AddPaymentModal"
 import { apiGet } from "@/lib/api"
-
 type View = "day" | "week" | "month"
 
 export default function Sessions() {
@@ -24,18 +23,33 @@ export default function Sessions() {
     const [showPayment, setShowPayment] = useState(false);
     const [sessions, setSessions] = useState<Session[]>([]);
     const [editSession, setEditSession] = useState<Session | null>(null)
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
+    const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+    useEffect(() => {
+        if (customerSearchTerm.length < 1) return setCustomers([])
 
+        const timeout = setTimeout(async () => {
+            const res = await apiGet(`/customers?search=${customerSearchTerm}&take=10`)
+            setCustomers(res.data)
+        }, 250)
+
+        return () => clearTimeout(timeout)
+    }, [customerSearchTerm])
 
     useEffect(() => {
-        async function fetchSessions() {
-            try {
-            const data = await apiGet("/sessions")
-            setSessions(data)
-            } catch (err) {
-            console.error(err)
-            }
+        async function fetchData() {
+            const [sessionsData, employeesData, servicesData] = await Promise.all([
+                apiGet("/sessions"),
+                apiGet("/employees"),
+                apiGet("/services"),
+            ])
+            setSessions(sessionsData);
+            setEmployees(employeesData);
+            setServices(servicesData);
         }
-        fetchSessions()
+        fetchData()
     }, [])
 
 
@@ -44,13 +58,11 @@ export default function Sessions() {
     )
     const handleSaveSession = (updatedSession: Session) => {
         if (editSession) {
-            // It's an edit
             setSessions((prev) =>
             prev.map((s) => (s.id === updatedSession.id ? updatedSession : s))
             )
             setEditSession(null)
         } else {
-            // It's a new session
             setSessions((prev) => [...prev, updatedSession])
         }
         setShowModal(false)
@@ -78,7 +90,7 @@ export default function Sessions() {
         console.log(session);
         setPaymentSession(session)
         setShowPayment(true)
-      }
+    }
     return (
         <div className="flex flex-col">
             <div className="flex flex-row">
@@ -100,7 +112,7 @@ export default function Sessions() {
                             onClick={() => {setShowModal(true)}}>
                         Add New Session
                     </button>
-                    <SearchBar 
+                    <SearchBar
                         onSelect = {(session)=>{
                             setCurrentDate(session.start)
                             setViewMode("day")
@@ -109,7 +121,6 @@ export default function Sessions() {
                 </aside>
 
                 <main className="flex-1 w-full bg-neutral-100 rounded-xl border border-l-0 border-gray-200 overflow-y-auto">
-                    
                     <CalendarHeader
                         initialDate={currentDate}
                         initialView={viewMode}
@@ -119,28 +130,28 @@ export default function Sessions() {
                         }}
                     />
                     {/* {viewMode === "week" && <WeeklyCalendarView date={currentDate} />} */}
-                    {viewMode === "month" && 
-                        <MonthlyCalendarView 
-                            date={currentDate} 
-                            events = {filteredSessions} 
-                            onEdit={handleStartEdit} 
+                    {viewMode === "month" &&
+                        <MonthlyCalendarView
+                            date={currentDate}
+                            events = {filteredSessions}
+                            onEdit={handleStartEdit}
                             onDelete={handleDeleteSession}
                             onMarkComplete={handleOpenPayment}/>}
-                            
-                    {viewMode === "week" && 
-                        <WeeklyCalendarView 
-                            date={currentDate} 
-                            events = {filteredSessions} 
-                            onEdit={handleStartEdit} 
-                            onDelete={handleDeleteSession}/>}
+                    {viewMode === "week" &&
+                        <WeeklyCalendarView
+                            date={currentDate}
+                            events = {filteredSessions}
+                            onEdit={handleStartEdit}
+                            onDelete={handleDeleteSession}
+                            onMarkComplete={handleOpenPayment}/>}
 
-                    {viewMode === "day" && 
-                        <DailyCalendarView 
-                            date={currentDate} 
-                            events = {filteredSessions} 
-                            onEdit={handleStartEdit} 
-                            onDelete={handleDeleteSession}/>}
-                
+                    {viewMode === "day" &&
+                        <DailyCalendarView
+                            date={currentDate}
+                            events = {filteredSessions}
+                            onEdit={handleStartEdit}
+                            onDelete={handleDeleteSession}
+                            onMarkComplete={handleOpenPayment}/>}
                 </main>
             </div>
             <button
@@ -153,7 +164,11 @@ export default function Sessions() {
                 <AddSessionModal
                     onClose={handleClose}
                     onSave={handleSaveSession}
-                    initialData={editSession} 
+                    initialData={editSession}
+                    customers={customers}
+                    employees={employees}
+                    services={services}
+                    onCustomerSearch={setCustomerSearchTerm}
                 />
             )}
             {showPayment && paymentSession && (
@@ -171,7 +186,7 @@ export default function Sessions() {
                 />
             )}
         </div>
-        
+
     )
 }
 

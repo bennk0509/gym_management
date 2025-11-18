@@ -2,8 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
-import { Session } from "@/data/sessions"
-import { CalendarDays, User, StickyNote, Clock, Dumbbell } from "lucide-react"
+import { Session } from "@/types/types"
+import { CalendarDays, User, Clock, Dumbbell } from "lucide-react"
 import { MdEdit, MdDelete, MdClose } from "react-icons/md"
 type Props = {
   session: Session
@@ -85,6 +85,7 @@ export default function SessionHoverCard({
 
           {/* Content */}
           <div className="p-5 flex flex-col gap-4 text-sm">
+
             {/* Date & Time */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -92,15 +93,18 @@ export default function SessionHoverCard({
                   <Clock className="w-4 h-4 text-yellow-600" /> Date & Time
                 </p>
                 <p className="font-medium mt-1">
-                  {format(session.start, "dd/MM/yyyy")} <br />
-                  {format(session.start, "HH:mm")} – {format(session.end, "HH:mm")}
+                  {format(new Date(session.start), "dd/MM/yyyy")} <br />
+                  {format(new Date(session.start), "HH:mm")} – {format(new Date(session.end), "HH:mm")}
                 </p>
               </div>
+
               <div>
                 <p className="text-gray-500 text-xs flex items-center gap-1">
                   <User className="w-4 h-4 text-yellow-600" /> Customer
                 </p>
-                <p className="font-medium mt-1">{session.customer}</p>
+                <p className="font-medium mt-1">
+                  {session.customer?.firstName} {session.customer?.lastName}
+                </p>
               </div>
             </div>
 
@@ -110,27 +114,30 @@ export default function SessionHoverCard({
                 <p className="text-gray-500 text-xs flex items-center gap-1">
                   <Dumbbell className="w-4 h-4 text-yellow-600" /> Service
                 </p>
-                <p className="font-medium mt-1">{session.serviceId}</p>
+                <p className="font-medium mt-1">
+                  {session.serviceId ? `${session.service.name}` : "—"}
+                </p>
               </div>
+
               <div>
                 <p className="text-gray-500 text-xs flex items-center gap-1">
                   <User className="w-4 h-4 text-yellow-600" /> Employee
                 </p>
-                <p className="font-medium mt-1">{session.employee}</p>
+                <p className="font-medium mt-1">
+                  {session.employee?.firstName} {session.employee?.lastName}
+                </p>
               </div>
             </div>
 
-            {/* Type */}
+            {/* Type & Price */}
             <div className="grid grid-cols-2 gap-4">
-                <div>
-                   <p className="text-gray-500 text-xs">Type</p>
-                   <p className="font-medium mt-1 capitalize">{session.type}</p>
-                </div>
               <div>
-                    <p className="text-gray-500 text-xs flex items-center gap-1">
-                        Total price
-                    </p>
-                    <p className="font-medium mt-1">{session.totalPrice} VND</p>
+                <p className="text-gray-500 text-xs">Type</p>
+                <p className="font-medium mt-1 capitalize">{session.type}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Total Price</p>
+                <p className="font-medium mt-1">{session.totalPrice} VND</p>
               </div>
             </div>
           </div>

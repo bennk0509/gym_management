@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
-import { startOfWeek, addDays, format, isSameDay } from "date-fns"
-import { CalendarProps, Session } from "@/data/sessions"
+import {isSameDay } from "date-fns"
+import {CalendarProps } from "@/types/types"
 import SessionHoverCard from "./SessionHoverCard"
 import { SessionBox } from "./EventCard"
 
-export default function DailyCalendarView({ date, events = [],onEdit,onDelete }: CalendarProps) {
+export default function DailyCalendarView({ date, events = [],onEdit,onDelete, onMarkComplete }: CalendarProps) {
     const startHour = 0
     const endHour = 23
     const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i)
@@ -17,17 +17,6 @@ export default function DailyCalendarView({ date, events = [],onEdit,onDelete }:
       const timer = setInterval(() => setNow(new Date()), 60 * 1000)
       return () => clearInterval(timer)
     }, [])
-
-    // useEffect(() => {
-    //   const handleClickOutside = (e: MouseEvent) => {
-    //     const target = e.target as HTMLElement
-    //     if (!target.closest(".event-card") && !target.closest(".hover-card")) {
-    //       setSelectedId(null)
-    //     }
-    //   }
-    //   document.addEventListener("click", handleClickOutside)
-    //   return () => document.removeEventListener("click", handleClickOutside)
-    // }, [])
 
     const currentHour = now.getHours()
     const currentMinutes = now.getMinutes()
@@ -44,7 +33,6 @@ export default function DailyCalendarView({ date, events = [],onEdit,onDelete }:
               </div>
             ))}
           </div>
-  
           {/* Grid Column */}
           <div className="flex-1 relative">
             <div
@@ -57,7 +45,7 @@ export default function DailyCalendarView({ date, events = [],onEdit,onDelete }:
             ))}
             {events
             .filter((e) => isSameDay(e.start, date))
-            .sort((a, b) => a.start.getTime() - b.start.getTime())
+            .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
             .map((e, idx, allEvents) => (
                 <SessionBox
                   key={e.id}
@@ -73,6 +61,7 @@ export default function DailyCalendarView({ date, events = [],onEdit,onDelete }:
                   onEdit={onEdit}
                   onDelete={onDelete}
                   view="daily"
+                  onMarkComplete={onMarkComplete}
                 />
 
             ))}
@@ -81,4 +70,3 @@ export default function DailyCalendarView({ date, events = [],onEdit,onDelete }:
       </div>
     )
   }
-  

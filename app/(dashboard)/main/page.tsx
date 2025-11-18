@@ -1,7 +1,7 @@
 "use client"
 import Card from "@/components/Card";
 import DashboardHeader from "@/components/DashboardHeader";
-import { Users, Activity, UserMinus, DollarSign, Table } from "lucide-react"
+import { Users, Activity, UserMinus, DollarSign } from "lucide-react"
 import TopServiceChart from "@/components/TopServiceChart";
 import RevenueOverview from "@/components/RevenueOverview";
 import TopEmployeesChart from "@/components/TopEmployeeChart";
@@ -44,7 +44,6 @@ export default function Home(){
             <Skeleton className="h-[300px] w-1/2" />
             <Skeleton className="h-[300px] w-1/2" />
           </div>
-          
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-[280px] w-full" />
