@@ -13,20 +13,6 @@ import {
 } from "lucide-react";
 import { Session } from "@/types/types";
 
-// export type Session = {
-//   id: string;
-//   title: string;
-//   customer: string;
-//   employee: string;
-//   service: string;
-//   type: string;
-//   status: "New" | "Done" | "Cancel";
-//   date: string; // ISO date
-//   start: string;
-//   end: string;
-//   totalPrice: number;
-//   notes?: string;
-// };
 
 interface SessionDetailProps {
   session: Session | null;

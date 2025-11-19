@@ -1,68 +1,107 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { RiExpandUpDownLine } from "react-icons/ri"
+import { useState, useMemo, useEffect } from "react"
 import { DollarSign, CreditCard, Clock, RefreshCcw, Banknote } from "lucide-react"
 import { MdOutlineRemoveRedEye, MdOutlineDeleteForever, MdOutlineModeEdit } from "react-icons/md"
-import { Payment, mockPayments } from "@/data/sessions"
+import { Payment } from "@/types/types"
 import Card from "@/components/Card"
 import DashboardHeader from "@/components/DashboardHeader"
 import DataTable from "@/components/DataTable"
 import Pagination from "@/components/Pagination"
+import { apiGet } from "@/lib/api"
+import { toast } from "sonner"
+import { format } from "date-fns"
+
 
 export default function Payments() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const rowsPerPage = 10
-  const totalPages = Math.ceil(mockPayments.length / rowsPerPage)
-  const [sortField, setSortField] = useState<keyof Payment | null>(null)
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  // Backend-loaded data
+  const [payments, setPayments] = useState<Payment[]>([])
+  const [totalPages, setTotalPages] = useState(1)
 
-  const [month, setMonth] = useState("2025-10")
-  const [type, setType] = useState<Payment["paymentType"] | "all">("all")
+  // Filters
+  const [currentPage, setCurrentPage] = useState(1)
+  const [month, setMonth] = useState(() => {
+    return new Date().toISOString().slice(0, 7);
+  });
+  const [type, setType] = useState<Payment["paymentFor"] | "all">("all")
   const [method, setMethod] = useState<Payment["method"] | "all">("all")
   const [status, setStatus] = useState<Payment["status"] | "all">("all")
+
+  // ---- Sorting ----
+  const [sortField, setSortField] = useState<string>("dateReceived")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalPaid: 0,
+    totalPending: 0,
+    totalRefunded: 0,
+  })
+
+  // ---- Loading state ----
+  const [loading, setLoading] = useState(false)
+
+  const fetchPayments = async () => {
+    setLoading(true)
+
+    try {
+      const res = await apiGet(
+        `/payments?month=${month}&type=${type}&method=${method}&status=${status}&page=${currentPage}&perPage=10&sort=${sortField}&order=${sortOrder}`
+      )
+      setPayments(res.data)
+      setTotalPages(res.totalPages)
+      const statsData = await apiGet("/payments/stats");
+      setStats(statsData);
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to load payments")
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchPayments()
+  }, [month, type, method, status, currentPage, sortField, sortOrder])
+
+  // useEffect(() => {
+  //   apiGet(`/payments/stats?month=${month}`)
+  //     .then(res => setStats(res.data))
+  //     .catch(() => console.error("Failed to load stats"))
+  // }, [month])
 
   // ----------------- Derived data -----------------
   const currentDate = new Date()
 
-  const filteredPayments = useMemo(() => {
-    return mockPayments.filter((p) => {
-      const matchMonth = p.dateReceived.startsWith(month)
-      const matchType = type === "all" || p.paymentType === type
-      const matchMethod = method === "all" || p.method === method
-      const matchStatus = status === "all" || p.status === status
-      return matchMonth && matchType && matchMethod && matchStatus
-    })
-  }, [month, type, method, status])
+  // const filteredPayments = useMemo(() => {
+  //   return mockPayments.filter((p) => {
+  //     const matchMonth = p.dateReceived.startsWith(month)
+  //     const matchType = type === "all" || p.paymentType === type
+  //     const matchMethod = method === "all" || p.method === method
+  //     const matchStatus = status === "all" || p.status === status
+  //     return matchMonth && matchType && matchMethod && matchStatus
+  //   })
+  // }, [month, type, method, status])
 
-  const sortedPayments = useMemo(() => {
-    const copy = [...filteredPayments]
-    if (!sortField) return copy
-    return copy.sort((a, b) => {
-      const aVal = a[sortField]
-      const bVal = b[sortField]
-      if (typeof aVal === "number" && typeof bVal === "number") {
-        return sortOrder === "asc" ? aVal - bVal : bVal - aVal
-      }
-      return sortOrder === "asc"
-        ? String(aVal).localeCompare(String(bVal))
-        : String(bVal).localeCompare(String(aVal))
-    })
-  }, [filteredPayments, sortField, sortOrder])
+  // const sortedPayments = useMemo(() => {
+  //   const copy = [...filteredPayments]
+  //   if (!sortField) return copy
+  //   return copy.sort((a, b) => {
+  //     const aVal = a[sortField]
+  //     const bVal = b[sortField]
+  //     if (typeof aVal === "number" && typeof bVal === "number") {
+  //       return sortOrder === "asc" ? aVal - bVal : bVal - aVal
+  //     }
+  //     return sortOrder === "asc"
+  //       ? String(aVal).localeCompare(String(bVal))
+  //       : String(bVal).localeCompare(String(aVal))
+  //   })
+  // }, [filteredPayments, sortField, sortOrder])
 
-  const paginatedPayments = useMemo(() => {
-    return sortedPayments.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
-  }, [sortedPayments, currentPage, rowsPerPage])
+  // const paginatedPayments = useMemo(() => {
+  //   return sortedPayments.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+  // }, [sortedPayments, currentPage, rowsPerPage])
 
   // ----------------- Stats Cards -----------------
-  const totalRevenue = useMemo(
-    () => mockPayments.reduce((sum, p) => sum + p.amount, 0),
-    []
-  )
-  const totalPaid = mockPayments.filter((p) => p.status === "paid").length
-  const totalPending = mockPayments.filter((p) => p.status === "pending").length
-  const totalRefunded = mockPayments.filter((p) => p.status === "refunded").length
-
+  const {totalRevenue,totalPaid,totalPending,totalRefunded} = stats
   // ----------------- Handlers -----------------
   const handleSort = (field: keyof Payment) => {
     if (sortField === field) {
@@ -192,31 +231,47 @@ export default function Payments() {
           </button>
         </div>
 
-        {/* Data Table */}
         <DataTable
-          data={paginatedPayments}
+          data={payments}
           sortField={sortField}
           sortOrder={sortOrder}
+          loading={loading}
           onSort={(field) => handleSort(field as keyof Payment)}
           columns={[
-            { key: "dateReceived", header: "Date", sortable: true },
+            { key: "dateReceived", 
+              header: "Date", 
+              sortable: true,
+              render: (p: Payment) => (
+                <span>
+                  {format(new Date(p.dateReceived), "dd/MM/yyyy")}
+                </span>
+              )
+             },
+
             {
-              key: "paymentType",
+              key: "paymentFor",
               header: "Type",
               sortable: true,
               render: (p: Payment) => (
-                <span className="capitalize">{p.paymentType}</span>
+                <span className="capitalize">
+                  {p.paymentFor ? p.paymentFor.toLowerCase() : "-"}
+                </span>
               ),
             },
+
             {
               key: "amount",
               header: "Amount",
               sortable: true,
               render: (p: Payment) => (
-                <span className="font-semibold text-green-700">${p.amount}</span>
+                <span className="font-semibold text-green-700">
+                  ${p.amount}
+                </span>
               ),
             },
+
             { key: "method", header: "Method", sortable: true },
+
             {
               key: "status",
               header: "Status",
@@ -237,11 +292,13 @@ export default function Payments() {
                 </span>
               ),
             },
+
             {
               key: "notes",
               header: "Notes",
               render: (p: Payment) => p.notes || "-",
             },
+
             {
               key: "actions",
               header: "Actions",
@@ -254,6 +311,7 @@ export default function Payments() {
                   >
                     <MdOutlineRemoveRedEye size={20} />
                   </button>
+
                   <button
                     className="text-gray-400 hover:text-blue-500 transition-colors"
                     title="Edit"
@@ -261,6 +319,7 @@ export default function Payments() {
                   >
                     <MdOutlineModeEdit size={20} />
                   </button>
+
                   <button
                     className="text-gray-400 hover:text-red-500 transition-colors"
                     title="Delete"

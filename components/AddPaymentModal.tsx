@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CreditCard, User, CalendarDays, DollarSign, Dumbbell, Clock } from "lucide-react"
 import { Session } from "@/types/types"
+import { format } from "date-fns"
 
 type PaymentSummaryModalProps = {
   session: Session
   onClose: () => void
-  onConfirm: (session: Session, tip: number, method: string, tax: number) => void
+  onConfirm: (session: Session, tip: number, method: string, tax: number, amountPaid: number) => void
 }
 
 export default function PaymentSummaryModal({
@@ -19,10 +20,25 @@ export default function PaymentSummaryModal({
   const [tip, setTip] = useState(0)
   const [tax, setTax] = useState(0)
   const [method, setMethod] = useState("cash")
+  const [tipPercent, setTipPercent] = useState(0);     // stores 5,10,15
+  const [customTipMode, setCustomTipMode] = useState(false);  
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const subtotal = session.totalPrice || 0
-  const total = subtotal + tip + tax
-
+  const total = amountPaid + tip + tax
+  useEffect(() => {
+    if (!customTipMode) {
+      setTip((amountPaid * tipPercent) / 100);
+    }
+    const total = amountPaid + tip + tax
+  }, [amountPaid, tipPercent, customTipMode]);
+  const validatePayment = () => {
+    if (amountPaid <= 0) return "Amount paid must be greater than 0.";
+    if (tip < 0) return "Tip cannot be negative.";
+    if (tax < 0) return "Tax cannot be negative.";
+    if (total <= 0) return "Total must be greater than 0.";
+    return "";
+  };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-3xl p-6 space-y-6">
@@ -41,8 +57,8 @@ export default function PaymentSummaryModal({
             </h2>
             <p className="text-sm"><span className="font-medium">Title:</span> {session.title}</p>
             <p className="text-sm"><span className="font-medium">Service:</span> {session.service.name}</p>
-            <p className="text-sm"><span className="font-medium">Date:</span> {new Date(session.date).toLocaleDateString()}</p>
-            <p className="text-sm"><span className="font-medium">Time:</span> {session.time}</p>
+            <p className="text-sm"><span className="font-medium">Date:</span> {format(new Date(session.start), "dd/MM/yyyy")}</p>
+            <p className="text-sm"><span className="font-medium">Time:</span> {format(new Date(session.start), "HH:mm")} – {format(new Date(session.end), "HH:mm")}</p>
             <p className="text-sm"><span className="font-medium">Trainer:</span> {session.employee.lastName} {session.employee.firstName}</p>
           </div>
 
@@ -72,45 +88,94 @@ export default function PaymentSummaryModal({
               className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-yellow-500 focus:border-yellow-500"
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs font-medium text-gray-500">Tip (VND)</label>
-              <input
-                type="number"
-                value={tip}
-                onChange={(e) => setTip(+e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-yellow-500 focus:border-yellow-500"
-              />
+          {/* TIP SECTION */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-500">Tip</label>
+
+            {/* Tip options */}
+            <div className="flex gap-2">
+              {[
+                { label: "5%", value: 5 },
+                { label: "10%", value: 10 },
+                { label: "15%", value: 15 },
+                { label: "Custom", value: -1 },
+              ].map((item) => {
+                const isSelected =
+                  item.value === -1 ? customTipMode : tipPercent === item.value;
+
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      if (item.value === -1) {
+                        setCustomTipMode(true);
+                        setTip(0);
+                        setTipPercent(0);
+                      } else {
+                        setCustomTipMode(false);
+                        setTipPercent(item.value);
+                        setTip((amountPaid * item.value) / 100);
+                      }
+                    }}
+                    className={`flex-1 py-2 rounded-lg border text-sm transition 
+                      ${isSelected 
+                        ? "bg-[#FFC107] text-black border-[#FFC107]" 
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                      }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
-            <div>
-              <label className="text-xs font-medium text-gray-500">Tax (VND)</label>
-              <input
-                type="number"
-                value={tax}
-                onChange={(e) => setTax(+e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-yellow-500 focus:border-yellow-500"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-500">Payment Method</label>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-yellow-500 focus:border-yellow-500"
-              >
-                <option value="cash">Cash</option>
-                <option value="credit">Credit</option>
-                <option value="debit">Debit</option>
-                <option value="transfer">Transfer</option>
-              </select>
-            </div>
+
+            {/* Manual tip input (enabled only when Custom is selected) */}
+            <input
+              type="number"
+              placeholder="Enter tip amount (VND)"
+              value={customTipMode ? tip : ""}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                setTip(value);
+              }}
+              disabled={!customTipMode}
+              className={`w-full border rounded-md p-2 text-sm mt-2 transition
+                ${customTipMode 
+                  ? "border-gray-300 focus:ring-yellow-500 focus:border-yellow-500" 
+                  : "bg-gray-100 border-gray-200 text-gray-400"
+                }
+              `}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500">Tax (%)</label>
+            <input
+              type="number"
+              value={tax}
+              onChange={(e) => setTax(+e.target.value)}
+              className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-yellow-500 focus:border-yellow-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500">Payment Method</label>
+            <select
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              className="mt-1 w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-yellow-500 focus:border-yellow-500"
+            >
+              <option value="cash">Cash</option>
+              <option value="credit">Credit</option>
+              <option value="debit">Debit</option>
+              <option value="transfer">Transfer</option>
+            </select>
           </div>
 
           {/* Money Breakdown */}
           <div className="border-t border-dashed border-gray-300 pt-3 text-sm space-y-1">
             <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
-              <span>{subtotal.toLocaleString()} VND</span>
+              <span>{amountPaid.toLocaleString()} VND</span>
             </div>
             <div className="flex justify-between text-gray-600">
               <span>Tip</span>
@@ -118,7 +183,7 @@ export default function PaymentSummaryModal({
             </div>
             <div className="flex justify-between text-gray-600">
               <span>Tax</span>
-              <span>{tax.toLocaleString()} VND</span>
+              <span>{((amountPaid * tax) / 100).toLocaleString()} VND</span>
             </div>
             <div className="flex justify-between font-semibold text-gray-900 mt-1">
               <span>Total</span>
@@ -136,7 +201,7 @@ export default function PaymentSummaryModal({
             Cancel
           </button>
           <button
-            onClick={() => onConfirm(session, tip, method, tax)}
+            onClick={() => onConfirm(session, tip, method, ((amountPaid * tax) / 100), amountPaid)}
             className="w-full md:w-auto py-2 px-4 rounded-lg bg-[#FFC107] text-[#1E1E1E] font-semibold hover:bg-[#e0a900] transition"
           >
             Confirm & Pay {total.toLocaleString()} VND
@@ -144,7 +209,7 @@ export default function PaymentSummaryModal({
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-2">
-          Secured by FitWell Encryption • No external sharing
+          Secured • No external sharing
         </p>
       </div>
     </div>

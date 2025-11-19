@@ -15,9 +15,7 @@ import Pagination from "@/components/Pagination";
 import AddNewEmployee from "@/components/AddNewEmployee";
 import EmployeeSearchBar from "@/components/CustomerSearchBar"; 
 import EmployeeFiltersPanel from "@/components/EmployeeFiltersPanel";
-import { useDebounce } from "use-debounce";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
-import { stat } from "fs";
 import { Employee } from "@/types/types";
 import { toast } from "sonner";
 

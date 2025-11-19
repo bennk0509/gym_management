@@ -11,7 +11,8 @@ import { LuPackage } from "react-icons/lu";
 import { HiOutlineMenuAlt2 } from "react-icons/hi"
 import CustomerSelect from "./CustomerSelect"
 import AddNewCustomer from "./AddNewCustomer";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPatch, apiPost } from "@/lib/api";
+import {motion} from "motion/react"
 interface AddSessionModalProps {
   onClose: () => void
   onSave: (session: Session) => void
@@ -46,79 +47,127 @@ export default function AddSessionModal({
   const selectedService = services.find((s) => s.id === serviceID)
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [customerPackages, setCustomerPackages] = useState<Packages[]>([]);
+  const [selectedCustomerObj, setSelectedCustomerObj] = useState<Customer | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const selectedCustomer = customers.find((c) => c.id === customerId) ?? null
-  console.log("Selected Customer:", selectedCustomer);
 
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!employeeId || !date || !startTime || !endTime) return;
+    const checkAvailability = async () => {
+      const startISO = `${date}T${startTime}`;
+      const endISO = `${date}T${endTime}`;
+
+      const sessionId = initialData?.id ?? ""; // EDIT mode
+
+      const res = await apiGet(
+        `/sessions/check-availability?employeeId=${employeeId}&start=${startISO}&end=${endISO}&excludeId=${sessionId}`
+      );
+
+      setIsAvailable(res.available);
+    };
+    checkAvailability();
+  }, [employeeId, date, startTime, endTime]);
   useEffect(() => {
     if (!customerId) return setCustomerPackages([]);
 
     (async () => {
       const res = await apiGet(`/packages/customer/${customerId}`);
-      console.log(res);
       setCustomerPackages(res);
     })();
   }, [customerId]);
+
   useEffect(() => {
     if (initialData) {
-      // Prefill for EDIT mode
-      setDate(initialData.start.split("T")[0])
-      setStartTime(initialData.start.slice(11, 16))
-      setEndTime(initialData.end.slice(11, 16))
-      setServiceID(initialData.serviceId.toString())
-      setEmployeeId(initialData.employee?.id ?? "")
-      setCustomerId(initialData.customer?.id ?? "")
-      setTitle(initialData.title)
+      const start = new Date(initialData.start);
+      const end = new Date(initialData.end);
+  
+      const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+  
+      const localDate = start.toISOString().split("T")[0];
+  
+      const localStartTime = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
+      const localEndTime = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
+  
+      setDate(localDate);
+      setStartTime(localStartTime);
+      setEndTime(localEndTime);
+  
+      setServiceID(initialData.serviceId.toString());
+      setEmployeeId(initialData.employee?.id ?? "");
+      setCustomerId(initialData.customer?.id ?? "");
+      setSelectedCustomerObj(initialData.customer);
+      (async () => {
+        const packs = await apiGet(`/packages/customer/${initialData.customerId}`);
+        setCustomerPackages(packs);
+        setCustomerPackage(initialData.packageId ?? "");
+      })();
+      setTitle(initialData.title);
     } else {
-      // NEW SESSION DEFAULTS
-      const now = new Date()
-      const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`)
-
-      const formattedDate = now.toISOString().split("T")[0]
-      const minutes = now.getMinutes()
-      const roundedMinutes = minutes < 30 ? 30 : 0
-      const roundedHours = minutes < 30 ? now.getHours() : now.getHours() + 1
-
-      const start = new Date(now)
-      start.setHours(roundedHours, roundedMinutes, 0, 0)
-      const end = new Date(start.getTime() + 60 * 60 * 1000)
-
-      setDate(formattedDate)
-      setStartTime(`${pad(start.getHours())}:${pad(start.getMinutes())}`)
-      setEndTime(`${pad(end.getHours())}:${pad(end.getMinutes())}`)
-      setServiceID("")
-      setEmployeeId("")
-      setCustomerId("")
+      // NEW CASE (keep as you wrote)
+      const now = new Date();
+      const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+  
+      const formattedDate = now.toISOString().split("T")[0];
+      const minutes = now.getMinutes();
+      const roundedMinutes = minutes < 30 ? 30 : 0;
+      const roundedHours = minutes < 30 ? now.getHours() : now.getHours() + 1;
+  
+      const start = new Date(now);
+      start.setHours(roundedHours, roundedMinutes, 0, 0);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+  
+      setDate(formattedDate);
+      setStartTime(`${pad(start.getHours())}:${pad(start.getMinutes())}`);
+      setEndTime(`${pad(end.getHours())}:${pad(end.getMinutes())}`);
+      setServiceID("");
+      setEmployeeId("");
+      setCustomerId("");
     }
-  }, [initialData])
+  }, [initialData,customers]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!serviceID || !customerId || !employeeId) {
-      alert("Please fill all required fields.")
-      return
+      alert("Please fill all required fields.");
+      return;
+    }
+    
+    if (isAvailable === false) {
+      alert("Employee is not available.");
+      return;
     }
 
-    // const session: Session = {
-    //   id: initialData?.id ?? crypto.randomUUID(),
-    //   title: title || "New Session",
-    //   status: initialData?.status ?? "new",
-    //   type: "gym", // or derive from service selection
-    //   start: new Date(`${date}T${startTime}`).toISOString(),
-    //   end: new Date(`${date}T${endTime}`).toISOString(),
-    //   totalPrice: 30, // set from service lookup later
-    //   serviceId: serviceID,
-    //   customerId,
-    //   employeeId,
-    //   customer: null,
-    //   employee: null,
-    //   createdAt: initialData?.createdAt ?? new Date().toISOString(),
-    //   updatedAt: new Date().toISOString(),
-    // }
+  
+    setIsSubmitting(true); 
+    try {
+      const startLocal = new Date(`${date}T${startTime}`);
+      const endLocal = new Date(`${date}T${endTime}`);
 
-    // onSave(session)
-    // onClose()
-  }
+      const body = {
+        title,
+        start: startLocal.toISOString(),
+        end: endLocal.toISOString(),
+        customerId,
+        employeeId,
+        serviceId: serviceID,
+        packageId: customerPackage || undefined,
+      };
 
+      let result;
+      if (isEdit) {
+        result = await apiPatch(`/sessions/${initialData.id}`, body);
+      } else {
+        result = await apiPost(`/sessions`, body);
+      }
+
+      onSave(result);
+
+    } finally {
+      setIsSubmitting(false); // STOP LOADING ANIMATION
+    }
+  };
+
+  
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <form className="bg-white rounded-2xl shadow-xl w-[540px] flex flex-col p-3 px-5 py-5 gap-4">
@@ -140,16 +189,6 @@ export default function AddSessionModal({
           </div>
         </div>
 
-        {/* Title */}
-        {/* <div>
-          <input
-            type="text"
-            placeholder="Add Session Title"
-            onChange={(e) => setTitle(e.target.value)}
-            value={title}
-            className="p-2 w-full border-b border-neutral-200 pb-0 text-brand-primary font-heading"
-          />
-        </div> */}
 
         {/* Form Fields */}
         <div className="flex flex-col gap-5 py-3">
@@ -186,10 +225,11 @@ export default function AddSessionModal({
           <div className="flex flex-row items-center gap-10">
             <MdPeopleAlt className="w-7 h-7 text-gray-500" />
             <select
-            className={`p-2 w-full border-b border-neutral-200 text-sm appearance-none
-                        ${employeeId === '' ? 'text-neutral-400'  : 'text-brand-primary' }`}
-                        value={employeeId}
-                        onChange={(e) => setEmployeeId(e.target.value)}
+              className={`p-2 w-full border-b text-sm appearance-none ${
+                isAvailable === false ? "border-red-500 text-red-500" : "border-neutral-200"
+              }`}
+              value={employeeId}
+              onChange={(e) => setEmployeeId(e.target.value)}
             >
             <option value="" disabled className="text-neutral-400">Select Employee</option>
             {employees.map((s) => (
@@ -199,14 +239,18 @@ export default function AddSessionModal({
             ))}
             </select>
           </div>
+          
 
           {/* Customer */}
           <div className="flex flex-row items-center gap-10">
             <MdOutlinePeople className="w-7 h-7 text-gray-500" />
             <CustomerSelect
               customers={customers}
-              value={selectedCustomer}
-              onChange={(c) => setCustomerId(c?.id ?? "")}
+              value={selectedCustomerObj}
+              onChange={(c) => {
+                setSelectedCustomerObj(c);
+                setCustomerId(c?.id ?? "");
+              }}
               onSearch={onCustomerSearch}
               onCreateCustomer={() => setShowAddCustomerModal(true)}
             />
@@ -286,13 +330,30 @@ export default function AddSessionModal({
         </div>
         {/* Footer */}
         <footer className="flex pt-5">
-          <button
-            type="button"
-            className="bg-accent-primary text-brand-primary p-2 w-full rounded-xl font-bold"
-            onClick={handleSave}
-          >
-            {isEdit ? "Save Changes" : "Create Session"}
-          </button>
+        <button
+          type="button"
+          disabled={isSubmitting || isAvailable === false}
+          onClick={handleSave}
+          className={`p-2 w-full rounded-xl font-bold transition-all flex items-center justify-center gap-2
+            ${isSubmitting 
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+              : isAvailable === false
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-accent-primary text-brand-primary hover:opacity-90"}
+          `}
+        >
+          {isSubmitting ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, rotate: 360 }}
+              transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }}
+              className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full"
+            />
+          ) : (
+            <span>{isEdit ? "Save Changes" : "Create Session"}</span>
+          )}
+        </button>
+
         </footer>
       </form>
 

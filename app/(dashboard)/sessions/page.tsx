@@ -10,7 +10,8 @@ import FilterBar from "@/components/FilterBar"
 import { Customer, Employee, Service, Session, SessionStatus } from "@/types/types"
 import AddSessionModal from "@/components/AddSessionModal"
 import PaymentSummaryModal from "@/components/AddPaymentModal"
-import { apiGet } from "@/lib/api"
+import { apiDelete, apiGet, apiPatch } from "@/lib/api"
+import { toast } from "sonner"
 type View = "day" | "week" | "month"
 
 export default function Sessions() {
@@ -58,39 +59,81 @@ export default function Sessions() {
     )
     const handleSaveSession = (updatedSession: Session) => {
         if (editSession) {
-            setSessions((prev) =>
+          setSessions((prev) =>
             prev.map((s) => (s.id === updatedSession.id ? updatedSession : s))
-            )
-            setEditSession(null)
+          );
+          toast.success("Session updated successfully!");
+          setEditSession(null);
         } else {
-            setSessions((prev) => [...prev, updatedSession])
+          setSessions((prev) => [...prev, updatedSession]);
+          toast.success("Session created successfully!");
         }
-        setShowModal(false)
-    }
+      
+        setShowModal(false);
+      };
+      
     const handleStartEdit = (session: Session) => {
-        console.log(session)
+        console.log(session);
         setEditSession(session)
         setShowModal(true)
     }
 
     const handleDeleteSession = (sessionToDelete: Session) => {
-        const confirmDelete = window.confirm(
-            `Are you sure you want to delete "${sessionToDelete.title}"?`
+        const ok = window.confirm(
+            `Are you sure you want to delete the session "${sessionToDelete.title}"?`
         )
-        if (!confirmDelete) return
-        setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete.id))
+    
+        if (!ok) return
+        toast.promise(
+            apiDelete(`/sessions/${sessionToDelete.id}`),
+            {
+              loading: "Deleting...",
+              success: "Session deleted.",
+              error: "Failed to delete session.",
+            }
+          )
+        
+        setSessions(prev => prev.filter(s => s.id !== sessionToDelete.id))
     }
     const handleClose = () => {
         setEditSession(null)
         setShowModal(false)
         setShowPayment(false);
     }
-    const handleOpenPayment = (session: Session) => {
-        console.log("On click payment");
-        console.log(session);
-        setPaymentSession(session)
-        setShowPayment(true)
-    }
+    const handleOpenPayment = async (session: Session) => {
+        if (session.packageId) {
+            const updated = await apiPatch(`/sessions/${session.id}/complete`, {});   
+            setSessions((prev) =>
+                prev.map((s) => (s.id === session.id ? updated : s))
+            );
+            toast.success("Session marked as complete (package used)");
+        } else {
+            setPaymentSession(session);
+            setShowPayment(true);
+        }
+    };  
+    // const handleConfirmPayment = async (sessions, tip, method, tax) => {
+    //     try {
+    //     const updated = await apiPatch(`/sessions/${session.id}/complete`, {
+    //         amount: session.totalPrice, // or amountPaid nếu bạn cho nhập custom price
+    //         tip,
+    //         tax,
+    //         method,
+    //     });
+
+    //     // Update Sessions in UI
+    //     setSessions((prev) =>
+    //         prev.map((s) => (s.id === session.id ? updated : s))
+    //     );
+
+    //     toast.success("Payment successful! Session marked as complete.");
+    // } catch (error: any) {
+    //     toast.error(error?.response?.data?.message || "Payment failed");
+    // }
+
+    // setShowPayment(false);
+    // setPaymentSession(null);
+    // }  
     return (
         <div className="flex flex-col">
             <div className="flex flex-row">
@@ -178,11 +221,28 @@ export default function Sessions() {
                     setShowPayment(false)
                     setPaymentSession(null)
                     }}
-                    onConfirm={(session, tip, method) => {
-                        console.log("Paying session", session.id, tip, method)
-                        setShowPayment(false)
-                        setPaymentSession(null)
+                    onConfirm={async (session, tip, method, tax, amountPaid) => {
+                        try {
+                            console.log(session,tip,method,tax, amountPaid);
+                            const updated = await apiPatch(`/sessions/${session.id}/complete`, {
+                                amount: amountPaid,   // hoặc amountPaid nếu bạn cho user sửa
+                                tip,
+                                tax,
+                                method,
+                            });
+                            setSessions((prev) =>
+                                prev.map((s) => (s.id === session.id ? updated : s))
+                            );
+                    
+                            toast.success("Payment recorded and session marked as complete!");
+                        } catch (err: any) {
+                            toast.error(err?.response?.data?.message || "Payment failed.");
+                        }
+                    
+                        setShowPayment(false);
+                        setPaymentSession(null);
                     }}
+                    
                 />
             )}
         </div>

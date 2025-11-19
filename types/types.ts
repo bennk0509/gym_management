@@ -132,8 +132,6 @@ export type PaymentType = "session" | "package" | "membership";
 export interface Session {
   id: string
   title: string
-  date: string // ISO date string
-  time: string // "08:00 - 09:00"
   status: SessionStatus
   type: SessionType
   start: string // ISO datetime string
@@ -213,18 +211,45 @@ export interface EmployeeDetail {
 }
 
 
-export type Payment = {
-  id: string;
-  relatedId: string; // session/package/membership ID
-  paymentType: PaymentType;
-  amount: number;
-  tax?: number;
-  tip?: number;
-  dateReceived: string;
-  method: "cash" | "credit" | "debit" | "transfer";
-  status: PaymentStatus;
-  notes?: string;
-};
+export type PaymentFor = "SESSION" | "PACKAGE"
+
+export type PaymentMethod = "cash" | "credit" | "debit" | "transfer"
+
+export interface Payment {
+  id: string
+
+  amount: number
+  tax: number | null
+  tip: number | null
+
+  dateReceived: string  // ISO date string from backend
+
+  method: PaymentMethod
+  status: PaymentStatus
+  notes?: string | null
+
+  paymentFor: PaymentFor
+
+  // Relations (optional depending on use)
+  sessionId?: string | null
+  packageId?: string | null
+
+  session?: {
+    id: string
+    title: string
+    start: string
+    end: string
+  } | null
+
+  package?: {
+    id: string
+    name: string
+    price: number
+  } | null
+
+  createdAt: string
+  updatedAt: string
+}
 
 // ----------------- REFUND -----------------
 export type Refund = {
