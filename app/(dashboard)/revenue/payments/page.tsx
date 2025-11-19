@@ -11,6 +11,7 @@ import Pagination from "@/components/Pagination"
 import { apiGet } from "@/lib/api"
 import { toast } from "sonner"
 import { format } from "date-fns"
+import PaymentsFiltersPanel from "@/components/PaymentFiltersPanel"
 
 
 export default function Payments() {
@@ -166,71 +167,21 @@ export default function Payments() {
           icon={<Banknote className="text-red-600" />}
         />
       </div>
-
+      
       {/* ---------- Filters + Table ---------- */}
       <div className="bg-white w-full border border-gray-200 shadow-md rounded-xl flex flex-col gap-2">
-        {/* Filters Row */}
-        <div className="flex flex-wrap items-center justify-between px-4 py-3 gap-3">
-          <div className="flex flex-wrap gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-600 block">Month</label>
-              <input
-                type="month"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className="border rounded-md px-2 py-1 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600 block">Type</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value as any)}
-                className="border rounded-md px-2 py-1 text-sm"
-              >
-                <option value="all">All</option>
-                <option value="session">Session</option>
-                <option value="package">Package</option>
-                <option value="membership">Membership</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600 block">Method</label>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value as any)}
-                className="border rounded-md px-2 py-1 text-sm"
-              >
-                <option value="all">All</option>
-                <option value="cash">Cash</option>
-                <option value="credit">Credit</option>
-                <option value="debit">Debit</option>
-                <option value="transfer">Transfer</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600 block">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
-                className="border rounded-md px-2 py-1 text-sm"
-              >
-                <option value="all">All</option>
-                <option value="paid">Paid</option>
-                <option value="pending">Pending</option>
-                <option value="unpaid">Unpaid</option>
-                <option value="refunded">Refunded</option>
-              </select>
-            </div>
-          </div>
-          <button
-            onClick={resetFilters}
-            className="flex items-center gap-1 text-sm text-gray-600 hover:text-brand-600 transition"
-          >
-            <RefreshCcw size={16} /> Reset
-          </button>
-        </div>
-
+        <PaymentsFiltersPanel
+          month={month}
+          type={type}
+          method={method}
+          status={status}
+          onMonthChange={setMonth}
+          onTypeChange={(v) => setType(v as Payment["paymentFor"] | "all")}
+          onMethodChange={(v) => setMethod(v as Payment["method"] | "all")}
+          onStatusChange={(v) => setStatus(v as Payment["status"] | "all")}
+          onReset={resetFilters}
+        />
+          
         <DataTable
           data={payments}
           sortField={sortField}

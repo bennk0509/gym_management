@@ -18,10 +18,12 @@ interface RevenueOverviewProps {
 
 export default function RevenueOverview({ monthlyRevenue }: RevenueOverviewProps) {
   const totalRevenue = monthlyRevenue.reduce((sum, m) => sum + m.revenue, 0);
-  const lastMonth = monthlyRevenue.at(-2)?.revenue ?? 0;
-  const currentMonth = monthlyRevenue.at(-1)?.revenue ?? 0;
+  const currentMonth = monthlyRevenue.at(-2)?.revenue ?? 0;
+  const lastMonth = monthlyRevenue.at(-1)?.revenue ?? 0;
   const growth =
-    lastMonth === 0 ? 0 : (((currentMonth - lastMonth) / lastMonth) * 100).toFixed(1);
+  lastMonth === 0
+    ? 0
+    : ((currentMonth - lastMonth) / lastMonth) * 100;
 
   return (
     <motion.div
@@ -43,13 +45,11 @@ export default function RevenueOverview({ monthlyRevenue }: RevenueOverviewProps
         <div className="text-4xl font-bold text-gray-900">
           ${totalRevenue.toLocaleString()}
         </div>
-        <p
-          className={`text-sm flex items-center gap-1 mt-1 ${
-            Number(growth) >= 0 ? "text-green-600" : "text-red-600"
-          }`}
-        >
+        <p className={`text-sm flex items-center gap-1 mt-1 ${
+          growth >= 0 ? "text-green-600" : "text-red-600"
+        }`}>
           <ArrowUpRight size={16} />
-          {growth}% from last month
+          {growth.toFixed(1)}% from last month
         </p>
       </div>
 

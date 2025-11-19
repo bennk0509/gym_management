@@ -171,7 +171,7 @@ export default function DashboardLayout({
             transition={{ duration: 0.3 }}
             className="font-bold text-lg text-brand-primary overflow-hidden whitespace-nowrap"
           >
-            FitWell Admin
+            HT Private Gym
           </motion.h1>
           <button
             onClick={() => setIsOpen(!isOpen)}

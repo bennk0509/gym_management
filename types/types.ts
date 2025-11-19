@@ -282,20 +282,29 @@ export type Payroll = {
 };
 
 // ----------------- OPERATIONAL COST -----------------
-export type OperationalCost = {
-  id: string;
-  category:
-    | "rent"
-    | "utilities"
-    | "equipment"
-    | "marketing"
-    | "maintenance"
-    | "insurance"
-    | "supplies";
-  amount: number;
-  period: string; // YYYY-MM
-  notes?: string;
-};
+export type CostCategory =
+  | "RENT"
+  | "UTILITIES"
+  | "EQUIPMENT"
+  | "MAINTENANCE"
+  | "MARKETING"
+  | "SALARY"
+  | "OTHER"
+
+export interface OperationalCost {
+  id: string
+  category: CostCategory
+  amount: number
+  
+  periodStart: string   // ISO string (Date)
+  periodEnd: string     // ISO string (Date)
+
+  notes?: string | null
+
+  createdAt: string
+  updatedAt: string
+}
+
 
 // ----------------- PROMOTIONAL DISCOUNT -----------------
 export type PromotionalDiscount = {
