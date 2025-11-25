@@ -1,106 +1,106 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+function getToken() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("access_token");
+}
+
+// ===========================
+// GET
+// ===========================
 export async function apiGet(path: string) {
-  const res = await fetch(`${API_URL}${path}`,{
-    credentials: "include"
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
   });
+
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
 
+// ===========================
+// POST
+// ===========================
 export async function apiPost(path: string, data: any) {
   const res = await fetch(`${API_URL}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
     body: JSON.stringify(data),
-    credentials: "include"
   });
+
   if (!res.ok) {
-    let errorMessage = `Added failed (${res.status})`;
+    let error = `Added failed (${res.status})`;
 
     try {
-      const data = await res.json();
-      if (data?.message) {
-        errorMessage = data.message;
-      }
-    } catch {
-      // fallback nếu body không phải JSON
-    }
+      const msg = await res.json();
+      if (msg?.message) error = msg.message;
+    } catch {}
 
-    throw new Error(errorMessage);
+    throw new Error(error);
   }
+
   return res.json();
 }
 
-export async function apiDelete(endpoint: string) {
-    const res = await fetch(`${API_URL}${endpoint}`, {
-      method: "DELETE",
-      credentials: "include"
-    });
-    if (!res.ok) {
-      let errorMessage = `Delete failed (${res.status})`;
-  
-      try {
-        // đọc nội dung JSON từ backend nếu có
-        const data = await res.json();
-        if (data?.message) {
-          errorMessage = data.message; // lấy message từ NestJS
-        }
-      } catch {
-        // fallback nếu body không phải JSON
-      }
-  
-      throw new Error(errorMessage);
-    }
-    return res.json();
+// ===========================
+// DELETE
+// ===========================
+export async function apiDelete(path: string) {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  if (!res.ok) {
+    let msg = `Delete failed (${res.status})`;
+    try {
+      const data = await res.json();
+      if (data?.message) msg = data.message;
+    } catch {}
+    throw new Error(msg);
+  }
+
+  return res.json();
 }
 
-export async function apiPut(endpoint: string, data: any) {
-  const res = await fetch(`${API_URL}${endpoint}`, {
+// ===========================
+// PUT
+// ===========================
+export async function apiPut(path: string, data: any) {
+  const res = await fetch(`${API_URL}${path}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
     body: JSON.stringify(data),
-    credentials: "include"
   });
-  if (!res.ok) {
-    let errorMessage = `Edited failed (${res.status})`;
 
-    try {
-      const data = await res.json();
-      if (data?.message) {
-        errorMessage = data.message;
-      }
-    } catch {
-      // fallback nếu body không phải JSON
-    }
+  if (!res.ok) throw new Error(`Edited failed (${res.status})`);
 
-    throw new Error(errorMessage);
-  }
   return res.json();
 }
 
-export async function apiPatch(endpoint: string, data: any) {
-  const res = await fetch(`${API_URL}${endpoint}`, {
+// ===========================
+// PATCH
+// ===========================
+export async function apiPatch(path: string, data: any) {
+  const res = await fetch(`${API_URL}${path}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
     body: JSON.stringify(data),
-    credentials: "include"
   });
 
-  if (!res.ok) {
-    let errorMessage = `Edited failed (${res.status})`;
-
-    try {
-      const body = await res.json();
-      if (body?.message) {
-        errorMessage = body.message; // NestJS error message
-      }
-    } catch {
-      // Non-JSON fallback
-    }
-
-    throw new Error(errorMessage);
-  }
+  if (!res.ok) throw new Error(`Edited failed (${res.status})`);
 
   return res.json();
 }
