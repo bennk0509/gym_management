@@ -15,8 +15,7 @@ export default function LoginPage() {
         email,
         password,
       });
-
-      localStorage.setItem("access_token", res.access_token)
+      localStorage.setItem("access_token", res.accessToken)
   
       // If successful login:
       window.location.href = "/main";
