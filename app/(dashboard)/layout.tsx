@@ -23,10 +23,22 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  async function handleLogout() {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include", // VERY IMPORTANT: send cookie to backend
+      });
 
+      window.location.href = "/"; // redirect to home page
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  }
   const toggleExpand = (label: string) => {
     setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
   };
@@ -193,6 +205,7 @@ export default function DashboardLayout({
           <motion.div
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
+            onClick={handleLogout}
             className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 transition"
           >
             <Settings size={20} className="text-gray-400" />
@@ -205,7 +218,7 @@ export default function DashboardLayout({
                   transition={{ duration: 0.2 }}
                   className="text-sm"
                 >
-                  Settings
+                  Log out
                 </motion.span>
               )}
             </AnimatePresence>

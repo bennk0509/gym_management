@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CreditCard, User, CalendarDays, DollarSign, Dumbbell, Clock } from "lucide-react"
+import { CreditCard, User, CalendarDays, DollarSign} from "lucide-react"
 import { Session } from "@/types/types"
 import { format } from "date-fns"
 

@@ -16,9 +16,9 @@ export default function ContactSection() {
     //     <div className="absolute inset-0 bg-gradient-to-t from-[#1E1E1E]/90 to-[#1E1E1E]" />
     <section className="w-full pb-20 mb-20 flex flex-col items-center justify-center text-white">
         <div className="flex flex-col items-center justify-center px-10 text-white gap-5">
-            <h1 className="font-heading text-6xl z-50 tracking-widest">VISIT OUR GYM</h1>
+            <h1 className="font-branding text-6xl z-50 tracking-widest">VISIT OUR GYM</h1>
             <div className="relative p-10 pl-100 max-w-5xl mx-auto z-10 bg-[#4B4B4B] rounded-r-lg flex flex-col">
-                <div className='font-header tracking-wide text-sm'>
+                <div className='font-heading tracking-wide text-sm'>
                     <p className="text-yellow-400 mb-2">
                         Address: <span className="text-white font-medium">242 Đ. Vành Đai Trong, Bình Trị Đông B, Bình Tân, Hồ Chí Minh, Vietnam</span>
                     </p>
@@ -29,7 +29,7 @@ export default function ContactSection() {
                         Contact: <span className="text-white">+84 70 655 7168</span>
                     </p>
                 </div>
-                <div className='font-bebas text-yellow-400 text-4xl gap-2 flex flex-col'>
+                <div className='font-branding text-yellow-400 text-4xl gap-2 flex flex-col'>
                     <h1>Our socials: </h1>
                     <div className="flex gap-4 text-2xl mt-3">
                         <a href="" className="bg-white text-[#4B4B4B] p-2 rounded-full hover:bg-[#FFC107] transition">

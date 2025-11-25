@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { MdClose } from "react-icons/md"
 import { OperationalCost, CostCategory } from "@/types/types"
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 interface AddOperationalCostProps {

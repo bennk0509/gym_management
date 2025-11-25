@@ -1,8 +1,7 @@
 "use client"
 
 import { endOfWeek, startOfWeek, subDays, subMonths, subWeeks, format, addDays, addWeeks, addMonths } from "date-fns";
-import next from "next";
-import { useMemo, useState } from "react";
+import { useMemo} from "react";
 
 type View =  "day" | "week" | "month";
 

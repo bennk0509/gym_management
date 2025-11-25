@@ -1,0 +1,38 @@
+[
+    {
+      "id": 1,
+      "name": "Sophia Lee",
+      "feedback": "Amazing experience! Trainers are so friendly and professional.",
+      "rating": 5
+    },
+    {
+      "id": 2,
+      "name": "Daniel Kim",
+      "feedback": "Love the flexibility in scheduling and the modern gym equipment.",
+      "rating": 4
+    },
+    {
+    "id": 3,
+    "name": "Daniel Kim",
+    "feedback": "Love the flexibility in scheduling and the modern gym equipment.",
+    "rating": 4
+    },
+    {
+    "id": 4,
+    "name": "Daniel Kim",
+    "feedback": "Love the flexibility in scheduling and the modern gym equipment.",
+    "rating": 4
+    },
+    {
+    "id": 5,
+    "name": "Daniel Kim",
+    "feedback": "Love the flexibility in scheduling and the modern gym equipment.",
+    "rating": 4
+    },
+    {
+    "id": 6,
+    "name": "Daniel Kim",
+    "feedback": "Love the flexibility in scheduling and the modern gym equipment.",
+    "rating": 4
+    }
+]

@@ -1,7 +1,9 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function apiGet(path: string) {
-  const res = await fetch(`${API_URL}${path}`);
+  const res = await fetch(`${API_URL}${path}`,{
+    credentials: "include"
+  });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
@@ -11,6 +13,7 @@ export async function apiPost(path: string, data: any) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
+    credentials: "include"
   });
   if (!res.ok) {
     let errorMessage = `Added failed (${res.status})`;
@@ -32,6 +35,7 @@ export async function apiPost(path: string, data: any) {
 export async function apiDelete(endpoint: string) {
     const res = await fetch(`${API_URL}${endpoint}`, {
       method: "DELETE",
+      credentials: "include"
     });
     if (!res.ok) {
       let errorMessage = `Delete failed (${res.status})`;
@@ -56,6 +60,7 @@ export async function apiPut(endpoint: string, data: any) {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
+    credentials: "include"
   });
   if (!res.ok) {
     let errorMessage = `Edited failed (${res.status})`;
@@ -79,6 +84,7 @@ export async function apiPatch(endpoint: string, data: any) {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
+    credentials: "include"
   });
 
   if (!res.ok) {

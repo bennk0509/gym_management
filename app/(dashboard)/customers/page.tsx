@@ -1,5 +1,6 @@
 "use client"
 
+export const dynamic = "force-dynamic";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react"
 import { Users, Activity, DollarSign, UserMinus } from "lucide-react"
@@ -15,7 +16,6 @@ import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import {Customer} from "@/types/types";
 import {useDebounce} from "use-debounce"
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
 
 export default function Customers() {
     const router = useRouter();
@@ -33,10 +33,7 @@ export default function Customers() {
     const [editCustomer, setEditCustomer] = useState<Customer|null>(null)
     const [debouncedMinSpend] = useDebounce(minSpend, 500);
     const [debouncedQuery] = useDebounce(query, 400);
-    const searchParams = useSearchParams();
-    const initialPage = Number(searchParams.get("page") || 1);
-    const [currentPage, setCurrentPage] = useState(initialPage);
-
+    const [currentPage, setCurrentPage] = useState(1);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [pagination, setPagination] = useState({
         total: 0,

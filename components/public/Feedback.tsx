@@ -9,12 +9,11 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { TiStar } from "react-icons/ti";
 
-// ✅ Define the testimonial type
 type Testimonial = {
   id: number;
   name: string;
   feedback: string;
-  rating: number; // 1–5 scale
+  rating: number;
 };
 
 const TerSet = [
@@ -97,7 +96,7 @@ const Feedback: React.FC = () => {
       className="p-10 bg-black text-white"
     >
       <motion.h2
-        className="text-3xl text-center mb-10 font-bebas tracking-wide"
+        className="text-3xl text-center mb-10 font-branding tracking-wide"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -138,7 +137,7 @@ const Feedback: React.FC = () => {
                 </span>
               </motion.div>
 
-              <h3 className="text-lg font-semibold text-white font-poppins">
+              <h3 className="text-lg font-semibold text-white font-heading">
                 {testimonial.name}
               </h3>
               <p className="text-gray-300 mt-3 text-sm leading-relaxed line-clamp-4">

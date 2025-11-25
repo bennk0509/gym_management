@@ -1,6 +1,5 @@
 "use client";
-import { CalendarDays, User, Dumbbell } from "lucide-react";
-import { mockSessions } from "@/data/sessions";
+import {User, Dumbbell } from "lucide-react";
 
 interface UpcomingSessionsCardProps {
   upcoming: {

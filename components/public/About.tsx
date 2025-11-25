@@ -1,145 +1,99 @@
-"use client";
+import { CgGym } from "react-icons/cg";
+import { FaUserGraduate } from "react-icons/fa6";
+import { TbMassage } from "react-icons/tb";
+import { FaUserFriends } from "react-icons/fa";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Float, Environment } from "@react-three/drei";
-import { motion } from "framer-motion";
-import { Suspense, useRef, useState } from "react";
-import * as THREE from "three";
+const About = () =>
+{
+    return (
+        <section id="about" className="h-screen w-full bg-[#1E1E1E] py-40 px-6 text-white scroll-mt-20">
+            <div className="flex flex-col items-center justify-center px-20">
+                <h1 className="font-branding text-4xl">About us</h1>
+                <h2 className="font-heading text-4xl m-10"> HT Private Gym & Massage Theraphy</h2>
+                {/* Description */}
+                <div className="mb-10 text-center">
+                    <p className="text-[#FFC107] font-heading font-medium text-sm md:text-base max-w-3xl mb-4">
+                    HT Private Gym & Massage Therapy was founded in 2021 with a mission to help Vietnamese people reduce back pain and improve overall health through personalized fitness and therapy.
+                    </p>
+                    <p className="text-white font-heading text-sm md:text-base leading-relaxed max-w-3xl mx-auto">
+                    At HT, we believe that every body has a story — and we’re here to help you write yours with strength, discipline, and care.
+                    </p>
+                </div>
+                <h1 className="font-branding text-4xl mb-10">Our service</h1>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center mt-10">
+                    {/* Service 1 */}
+                    <div className="relative bg-[#444] text-white rounded-xl px-6 py-10 text-center">
+                        {/* Icon Circle */}
+                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center shadow-md">
+                            {/* Icon — bạn có thể thay bằng <img> hoặc react-icon */}
+                            <CgGym className="text-black w-10 h-10" />
+                            </div>
+                        </div>
 
-type CardData = {
-  title: string;
-  icon: string;
-  description: string;
-  color: string;
-};
+                        {/* Content */}
+                        <h3 className="text-2xl font-extrabold mb-2 mt-6">PRIVATE GYM</h3>
+                        <p className="text-sm opacity-90 leading-relaxed">
+                            Train in a focused, exclusive environment with full equipment access.
+                        </p>
+                    </div>
 
-const cards: CardData[] = [
-  {
-    title: "Training",
-    icon: "🏋️‍♂️",
-    description: "Personalized strength sessions tailored to your goals and metrics.",
-    color: "#38bdf8",
-  },
-  {
-    title: "Therapy",
-    icon: "💆‍♂️",
-    description: "Recovery and body optimization powered by expert physiotherapists.",
-    color: "#22d3ee",
-  },
-  {
-    title: "Analytics",
-    icon: "📊",
-    description: "AI-driven performance tracking to refine every movement you make.",
-    color: "#818cf8",
-  },
-  {
-    title: "Community",
-    icon: "🤝",
-    description: "Train together, recover together — build lasting motivation.",
-    color: "#f472b6",
-  },
-];
 
-function AboutCard({ data }: { data: CardData }) {
-  const mesh = useRef<THREE.Mesh>(null);
-  const [flipped, setFlipped] = useState(false);
+                    {/* Service 2 */}
+                    <div className="relative bg-[#444] text-white rounded-xl px-6 py-10 text-center">
+                        {/* Icon Circle */}
+                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center shadow-md">
+                            {/* Icon — bạn có thể thay bằng <img> hoặc react-icon */}
+                            <TbMassage className="text-black w-10 h-10" />
+                            </div>
+                        </div>
 
-  // gentle rotation animation
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (mesh.current && !flipped) {
-      mesh.current.rotation.y = Math.sin(t * 0.2) * 0.1;
-    }
-  });
+                        {/* Content */}
+                        <h3 className="text-2xl font-extrabold mb-2 mt-6">MASSAGE THERAPHY</h3>
+                        <p className="text-sm opacity-90 leading-relaxed">
+                            Train in a focused, exclusive environment with full equipment access.
+                        </p>
+                    </div>
+                    
 
-  return (
-    <Float speed={1.5} floatIntensity={1}>
-      <mesh
-        ref={mesh}
-        onClick={() => setFlipped(!flipped)}
-        onPointerOver={() => (document.body.style.cursor = "pointer")}
-        onPointerOut={() => (document.body.style.cursor = "auto")}
-      >
-        <boxGeometry args={[2.5, 3.5, 0.2]} />
-        <meshStandardMaterial
-          color={data.color}
-          emissive={data.color}
-          emissiveIntensity={0.4}
-          transparent
-          opacity={0.2}
-        />
+                    {/* Service 3 */}
+                    <div className="relative bg-[#444] text-white rounded-xl px-6 py-10 text-center">
+                        {/* Icon Circle */}
+                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center shadow-md">
+                            {/* Icon — bạn có thể thay bằng <img> hoặc react-icon */}
+                            <FaUserFriends className="text-black w-8 h-8" />
+                            </div>
+                        </div>
 
-        <Html center transform>
-          <motion.div
-            animate={{ rotateY: flipped ? 180 : 0 }}
-            transition={{ duration: 0.8 }}
-            className="w-[200px] h-[280px] rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 flex flex-col items-center justify-center text-center shadow-lg [transform-style:preserve-3d]"
-          >
-            {!flipped ? (
-              <div>
-                <div className="text-5xl mb-3">{data.icon}</div>
-                <h3 className="text-xl font-semibold text-white">
-                  {data.title}
-                </h3>
-              </div>
-            ) : (
-              <div className="px-4 rotate-y-180">
-                <p className="text-sm text-zinc-300">{data.description}</p>
-              </div>
-            )}
-          </motion.div>
-        </Html>
-      </mesh>
-    </Float>
-  );
+                        {/* Content */}
+                        <h3 className="text-2xl font-extrabold mb-2 mt-6">COATCHING</h3>
+                        <p className="text-sm opacity-90 leading-relaxed">
+                            Train in a focused, exclusive environment with full equipment access.
+                        </p>
+                    </div>
+                    
+                    {/* Service 4 */}
+                    <div className="relative bg-[#444] text-white rounded-xl px-6 py-10 text-center">
+                        {/* Icon Circle */}
+                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center shadow-md">
+                            {/* Icon — bạn có thể thay bằng <img> hoặc react-icon */}
+                            <FaUserGraduate className="text-black w-8 h-8" />
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <h3 className="text-2xl font-extrabold mb-2 mt-6">PT TRAINER</h3>
+                        <p className="text-sm opacity-90 leading-relaxed">
+                            Train in a focused, exclusive environment with full equipment access.
+                        </p>
+                    </div>
+                    
+                </div>
+            </div>
+        </section>
+    )
 }
-
-function AboutCardsScene() {
-  return (
-    <>
-      <ambientLight intensity={0.4} />
-      <pointLight position={[3, 3, 3]} intensity={1.2} />
-      <group position={[0, 0, 0]}>
-        {cards.map((c, i) => (
-          <AboutCard
-            key={i}
-            data={c}
-          />
-        ))}
-      </group>
-      <Environment preset="studio" />
-    </>
-  );
-}
-
-export default function AboutCardsSection() {
-  return (
-    <section
-      id="about"
-      className="relative h-[130vh] bg-[#0b0b0c] text-white flex flex-col items-center justify-center overflow-hidden"
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-        className="text-center mb-12 z-10"
-      >
-        <h2 className="text-4xl sm:text-6xl font-extrabold">
-          About <span className="text-sky-400">HT Private Gym</span>
-        </h2>
-        <p className="mt-4 text-zinc-300 max-w-2xl mx-auto">
-          Strength, Recovery, and Balance — our 3D environment mirrors your
-          growth path. Hover or tap each card to explore.
-        </p>
-      </motion.div>
-
-      <div className="absolute inset-0">
-        <Canvas camera={{ position: [0, 0, 10], fov: 50 }}>
-          <Suspense fallback={null}>
-            <AboutCardsScene />
-          </Suspense>
-        </Canvas>
-      </div>
-    </section>
-  );
-}
+export default About;
